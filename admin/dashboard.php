@@ -226,6 +226,13 @@ if (mysqli_num_rows($val_transaksi) > 0) {
                     <a href="alat_kerja.php" class="nav-link"><i class="fa-solid fa-toolbox me-3"></i>Alat Kerja</a>
                     <a href="stall.php" class="nav-link"><i class="fa-solid fa-circle-dot me-3"></i>Data Stall</a>
                 </div>
+
+                <div class="nav-section-title">MENU TRANSAKSI</div>
+                <div class="nav flex-column">
+                    <a href="booking.php" class="nav-link"><i class="fa-solid fa-tags me-3"></i>Booking</a>
+                    <a href="alat_kerja.php" class="nav-link"><i class="fa-solid fa-toolbox me-3"></i>Alat Kerja</a>
+                    <a href="stall.php" class="nav-link"><i class="fa-solid fa-circle-dot me-3"></i>Data Stall</a>
+                </div>
             </div>
             
             <div class="mb-3 pt-2">
