@@ -115,81 +115,55 @@ if (isset($_POST['buat_booking'])) {
 
             <?= $pesan; ?>
 
-            <div class="row">
-                <div class="col-xl-8 col-lg-10">
-                    <div class="card-premium">
-                        <h6 class="fw-bold mb-4" style="color: #0f172a;"><i class="fa-solid fa-file-invoice text-primary me-2"></i>Form Formulir Pendaftaran</h6>
-                        
-                        <form action="" method="POST">
-                            
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label small fw-semibold text-secondary">Kendaraan Anda</label>
-                                    <select name="id_kendaraan" class="form-select" required>
-                                        <option value="" disabled selected>-- Pilih Kendaraan --</option>
-                                        <?php
-                                        $ambil_kendaraan = mysqli_query($koneksi, "SELECT id_kendaraan, merk, nomor_polisi FROM tbl_kendaraan WHERE id_pelanggan = '$id_pelanggan'");
-                                        if (mysqli_num_rows($ambil_kendaraan) == 0) {
-                                            echo "<option value='' disabled>Belum ada kendaraan terdaftar.</option>";
-                                        } else {
-                                            while ($k = mysqli_fetch_assoc($ambil_kendaraan)) {
-                                                echo "<option value='".$k['id_kendaraan']."'>".$k['merk']." (".$k['nomor_polisi'].")</option>";
-                                            }
-                                        }
-                                        ?>
-                                    </select>
-                                </div>
-                                
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label small fw-semibold text-secondary">Paket Layanan</label>
-                                    <select name="id_paket" class="form-select" required>
-                                        <option value="" disabled selected>-- Pilih Paket --</option>
-                                        <?php
-                                        $ambil_paket = mysqli_query($koneksi, "SELECT id_paket, nama_paket FROM tbl_paket_layanan");
-                                        if (mysqli_num_rows($ambil_paket) > 0) {
-                                            while ($p = mysqli_fetch_assoc($ambil_paket)) {
-                                                echo "<option value='".$p['id_paket']."'>".$p['nama_paket']."</option>";
-                                            }
-                                        } else {
-                                            echo "<option value='' disabled>Data paket kosong</option>";
-                                        }
-                                        ?>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label small fw-semibold text-secondary">Rencana Tanggal Kedatangan</label>
-                                    <input type="date" name="tanggal_servis" class="form-control" min="<?= date('Y-m-d'); ?>" required>
-                                </div>
-                                
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label small fw-semibold text-secondary">Pilihan Jam / Sesi</label>
-                                    <select name="jam_servis" class="form-select" required>
-                                        <option value="" disabled selected>-- Pilih Jam --</option>
-                                        <option value="07:00">07:00 - 11:00 WIB (Sesi Pagi I)</option>
-                                        <option value="13:00">13:00 - 16:00 WIB (Sesi Siang)</option>
-                                        <option value="19:00">19:00 - 21:00 WIB (Sesi Malam)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="form-label small fw-semibold text-secondary">Keluhan atau Jenis Kerusakan</label>
-                                <textarea name="keluhan" class="form-control" rows="4" placeholder="Jelaskan secara rinci kendala pada kendaraan Anda (Contoh: Ganti oli rutin, Rem depan berbunyi, atau Mesin brebet saat digas)"></textarea>
-                            </div>
-
-                            <div class="d-flex justify-content-end border-top border-light pt-3">
-                                <button type="submit" name="buat_booking" class="btn btn-premium px-4 py-2.5">
-                                    <i class="fa-solid fa-paper-plane me-2"></i>Kirim Jadwal Booking
-                                </button>
-                            </div>
-
-                        </form>
-                    </div>
-                </div>
+            <d<div class="row"> <div class="col-12"> <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+                <h5 class="fw-bold text-dark"><i class="fa-solid fa-calendar-plus me-2 text-primary"></i>Formulir Booking Servis</h5>
             </div>
+            <div class="card-body p-4">
+                <form action="booking.php" method="POST">
+                    
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-secondary">Pilih Kendaraan</label>
+                            <select name="id_kendaraan" class="form-select form-control-lg" required>
+                                <option value="">-- Pilih Kendaraan --</option>
+                                </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-secondary">Paket Layanan</label>
+                            <select name="id_paket" class="form-select form-control-lg" required>
+                                <option value="">-- Pilih Paket --</option>
+                                </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-secondary">Tanggal Servis</label>
+                            <input type="date" name="tanggal_servis" class="form-control form-control-lg" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-secondary">Jam Servis</label>
+                            <input type="time" name="jam_servis" class="form-control form-control-lg" required>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <label class="form-label small fw-bold text-secondary">Keluhan atau Jenis Kerusakan</label>
+                        <textarea name="keluhan" class="form-control form-control-lg" rows="4" placeholder="Jelaskan kendala kendaraan Anda..."></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-4 pt-2">
+                        <button type="submit" name="buat_booking" class="btn btn-primary btn-lg px-5 fw-bold shadow-sm">
+                            <i class="fa-solid fa-paper-plane me-2"></i>Kirim Booking
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>  
+        </div>
+    </div>
+</div>
 
         </div>
     </div>

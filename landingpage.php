@@ -87,7 +87,7 @@
         <a class="nav-link text-secondary" href="#paket">Paket Servis</a>
       </nav>
     </div>
-    <a href="../SibeoV2_1/auth/login.php" class="btn btn-dark mono fw-medium py-2 px-3" style="font-size:12.5px;">Masuk Ke Sistem →</a>
+    <a href="auth/login.php" class="btn btn-dark mono fw-medium py-2 px-3" style="font-size:12.5px;">Masuk Ke Sistem →</a>
   </div>
 </header>
 
@@ -104,7 +104,7 @@
         Tinggalkan antrean manual. Pilih kendaraan, paket servis, dan jadwal sesukamu, lalu pantau progres pengerjaannya secara langsung di SIBEO.
       </p>
       <div class="d-flex gap-3 flex-wrap">
-        <a href="../SibeoV2_1/auth/login.php" class="btn btn-brutal fw-bold py-3 px-4" style="font-size:14.5px;">Masuk Ke Sistem →</a>
+        <a href="auth/login.php" class="btn btn-brutal fw-bold py-3 px-4" style="font-size:14.5px;">Masuk Ke Sistem →</a>
         <a href="#alur" class="btn btn-outline-secondary fw-bold py-3 px-4" style="font-size:14.5px;">Lihat Cara Kerja</a>
       </div>
     </div>

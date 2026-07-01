@@ -134,10 +134,7 @@ include "../config/koneksi.php";
 </head>
 <body>
 
-<div class="container-fluid p-0">
-    <div class="row g-0">
-        
-        <div class="col-md-3 col-lg-2 sidebar">
+<div class="col-md-3 col-lg-2 sidebar">
             <div>
                 <div class="sidebar-brand-wrapper text-start ps-4">
                     <div class="sidebar-brand">SIBEO</div>
@@ -156,6 +153,13 @@ include "../config/koneksi.php";
                 <div class="nav-section-title">MENU OPERASIONAL</div>
                 <div class="nav flex-column">
                     <a href="paket_layanan.php" class="nav-link"><i class="fa-solid fa-tags me-3"></i>Paket Layanan</a>
+                    <a href="alat_kerja.php" class="nav-link"><i class="fa-solid fa-toolbox me-3"></i>Alat Kerja</a>
+                    <a href="stall.php" class="nav-link"><i class="fa-solid fa-circle-dot me-3"></i>Data Stall</a>
+                </div>
+
+                <div class="nav-section-title">MENU TRANSAKSI</div>
+                <div class="nav flex-column">
+                    <a href="booking.php" class="nav-link"><i class="fa-solid fa-tags me-3"></i>Booking</a>
                     <a href="alat_kerja.php" class="nav-link"><i class="fa-solid fa-toolbox me-3"></i>Alat Kerja</a>
                     <a href="stall.php" class="nav-link"><i class="fa-solid fa-circle-dot me-3"></i>Data Stall</a>
                 </div>

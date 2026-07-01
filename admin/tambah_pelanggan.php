@@ -7,8 +7,13 @@ if (isset($_POST['simpan'])) {
     $nama_lengkap    = mysqli_real_escape_string($koneksi, $_POST['nama_lengkap']);
     $nik             = mysqli_real_escape_string($koneksi, $_POST['nik']);
     $no_telepon      = mysqli_real_escape_string($koneksi, $_POST['no_telepon']);
+    
+    // Tangkap dan enkripsi password
+    $password   = $_POST['password'];
+    $password_enkripsi = password_hash($password, PASSWORD_DEFAULT);
 
-    $query_simpan = mysqli_query($koneksi, "INSERT INTO tbl_pelanggan (nomor_pelanggan, nama_lengkap, nik, no_telepon) VALUES ('$nomor_pelanggan', '$nama_lengkap', '$nik', '$no_telepon')");
+    // Tambahkan password ke dalam query INSERT
+    $query_simpan = mysqli_query($koneksi, "INSERT INTO tbl_pelanggan (nomor_pelanggan, nama_lengkap, nik, no_telepon, password) VALUES ('$nomor_pelanggan', '$nama_lengkap', '$nik', '$no_telepon', '$password_enkripsi')");
 
     if ($query_simpan) {
         echo "<script>alert('Data pelanggan berhasil ditambahkan!'); window.location='pelanggan.php';</script>";
@@ -30,7 +35,7 @@ $auto_number = "CS-" . str_pad($next_num, 3, "0", STR_PAD_LEFT);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tambah Pelanggan - SIBEO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
@@ -76,6 +81,15 @@ $auto_number = "CS-" . str_pad($next_num, 3, "0", STR_PAD_LEFT);
                         <input type="number" name="no_telepon" class="form-control" style="border-radius: 0 12px 12px 0;" placeholder="812xxxxxxx" required>
                     </div>
                 </div>
+                
+                <div class="col-12">
+                    <label class="form-label">Password Akun</label>
+                    <input type="password" name="password" class="form-control" placeholder="Buat password untuk login pelanggan" required>
+                    <small class="text-muted mt-2 d-block" style="font-size: 11px;">
+                        <i class="fa-solid fa-shield-halved text-success me-1"></i> Password akan dienkripsi secara otomatis oleh sistem.
+                    </small>
+                </div>
+
                 <div class="col-12 d-flex justify-content-end gap-2 mt-4 pt-3 border-top border-light">
                     <a href="pelanggan.php" class="btn btn-cancel">Batal</a>
                     <button type="submit" name="simpan" class="btn btn-save"><i class="fa-solid fa-floppy-disk me-2"></i> Simpan Pelanggan</button>

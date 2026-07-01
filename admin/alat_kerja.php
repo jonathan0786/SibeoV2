@@ -136,28 +136,26 @@ $query_alat = mysqli_query($koneksi, "SELECT * FROM tbl_alat_kerja ORDER BY id_a
         }
 
         /* ACTION BUTTON COMPONENTS */
-        .btn-add-premium {
-            background-color: #2563eb;
-            color: white;
-            font-weight: 700;
-            font-size: 14px;
-            padding: 12px 24px;
-            border-radius: 12px;
+        .btn-add {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
             border: none;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            padding: 10px 20px;
+            border-radius: 12px;
             transition: all 0.2s ease;
         }
-        .btn-add-premium:hover { 
-            background-color: #1d4ed8; 
-            color: white; 
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            color: white;
         }
     </style>
 </head>
 <body>
 
-<div class="container-fluid p-0">
-    <div class="row g-0">
-        
-        <div class="col-md-3 col-lg-2 sidebar">
+<div class="col-md-3 col-lg-2 sidebar">
             <div>
                 <div class="sidebar-brand-wrapper text-start ps-4">
                     <div class="sidebar-brand">SIBEO</div>
@@ -179,6 +177,13 @@ $query_alat = mysqli_query($koneksi, "SELECT * FROM tbl_alat_kerja ORDER BY id_a
                     <a href="alat_kerja.php" class="nav-link active"><i class="fa-solid fa-toolbox me-3"></i>Alat Kerja</a>
                     <a href="stall.php" class="nav-link"><i class="fa-solid fa-circle-dot me-3"></i>Data Stall</a>
                 </div>
+
+                <div class="nav-section-title">MENU TRANSAKSI</div>
+                <div class="nav flex-column">
+                    <a href="booking.php" class="nav-link"><i class="fa-solid fa-tags me-3"></i>Booking</a>
+                    <a href="alat_kerja.php" class="nav-link"><i class="fa-solid fa-toolbox me-3"></i>Alat Kerja</a>
+                    <a href="stall.php" class="nav-link"><i class="fa-solid fa-circle-dot me-3"></i>Data Stall</a>
+                </div>
             </div>
             
             <div class="mb-3 pt-2">
@@ -197,7 +202,7 @@ $query_alat = mysqli_query($koneksi, "SELECT * FROM tbl_alat_kerja ORDER BY id_a
                     <h1 class="fw-bold m-0" style="color: #1e293b; font-size: 32px; letter-spacing: -0.5px;">Inventori Alat Kerja</h1>
                     <p class="text-muted small m-0 mt-1">Daftar tools bengkel, jumlah unit tersedia, dan status kelayakan pakai mekanik.</p>
                 </div>
-                <a href="tambah_alat.php" class="btn btn-add-premium d-flex align-items-center">
+                <a href="tambah_alat.php" class="btn btn-add d-flex align-items-center">
                     <i class="fa-solid fa-plus me-2"></i> Tambah Alat
                 </a>
             </div>

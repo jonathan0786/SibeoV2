@@ -103,20 +103,19 @@ include "../config/koneksi.php";
             min-height: 100vh;
         }
         .btn-add {
-            background-color: #2563eb;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
             border: none;
             color: white;
             font-weight: 600;
             font-size: 14px;
             padding: 10px 20px;
-            border-radius: 10px;
+            border-radius: 12px;
             transition: all 0.2s ease;
-            text-decoration: none;
         }
         .btn-add:hover {
-            background-color: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
             color: white;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
         }
         
         /* Tabel */
@@ -177,6 +176,13 @@ include "../config/koneksi.php";
                 <div class="nav-section-title">MENU OPERASIONAL</div>
                 <div class="nav flex-column">
                     <a href="paket_layanan.php" class="nav-link active"><i class="fa-solid fa-tags me-3"></i>Paket Layanan</a>
+                    <a href="alat_kerja.php" class="nav-link"><i class="fa-solid fa-toolbox me-3"></i>Alat Kerja</a>
+                    <a href="stall.php" class="nav-link"><i class="fa-solid fa-circle-dot me-3"></i>Data Stall</a>
+                </div>
+
+                <div class="nav-section-title">MENU TRANSAKSI</div>
+                <div class="nav flex-column">
+                    <a href="booking.php" class="nav-link"><i class="fa-solid fa-tags me-3"></i>Booking</a>
                     <a href="alat_kerja.php" class="nav-link"><i class="fa-solid fa-toolbox me-3"></i>Alat Kerja</a>
                     <a href="stall.php" class="nav-link"><i class="fa-solid fa-circle-dot me-3"></i>Data Stall</a>
                 </div>

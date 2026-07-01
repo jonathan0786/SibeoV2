@@ -1,6 +1,127 @@
 <?php
 session_start();
 include "../config/koneksi.php";
+
+function buatKodePart($koneksi) {
+    $prefix = "SP-";
+    $nomor_terbesar = 0;
+
+    $query_nomor = mysqli_query(
+        $koneksi,
+        "SELECT kode_part FROM tbl_suku_cadang"
+    );
+
+    if ($query_nomor) {
+        while ($data_nomor = mysqli_fetch_assoc($query_nomor)) {
+            $kode_lama = $data_nomor['kode_part'] ?? '';
+
+            if (preg_match('/(\d+)$/', $kode_lama, $hasil)) {
+                $nomor = (int) $hasil[1];
+
+                if ($nomor > $nomor_terbesar) {
+                    $nomor_terbesar = $nomor;
+                }
+            }
+        }
+    }
+
+    $nomor_urut = $nomor_terbesar + 1;
+
+    return $prefix . str_pad((string) $nomor_urut, 3, "0", STR_PAD_LEFT);
+}
+
+$kode_part_baru = buatKodePart($koneksi);
+
+if (isset($_POST['simpan_suku_cadang'])) {
+    $kode_part = buatKodePart($koneksi);
+    $nama_part = trim($_POST['nama_part'] ?? '');
+    $harga_satuan = (int) preg_replace('/[^0-9]/', '', $_POST['harga_satuan'] ?? '');
+    $stok = (int) preg_replace('/[^0-9]/', '', $_POST['stok'] ?? '');
+
+    if ($nama_part === '' || $harga_satuan < 0 || $stok < 0) {
+        header("Location: suku_cadang.php?status=kosong");
+        exit;
+    }
+
+    $stmt = mysqli_prepare(
+        $koneksi,
+        "INSERT INTO tbl_suku_cadang (kode_part, nama_part, harga_satuan, stok) VALUES (?, ?, ?, ?)"
+    );
+
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "ssii", $kode_part, $nama_part, $harga_satuan, $stok);
+        $simpan = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+
+        if ($simpan) {
+            header("Location: suku_cadang.php?status=sukses");
+            exit;
+        }
+    }
+
+    header("Location: suku_cadang.php?status=gagal");
+    exit;
+}
+
+if (isset($_POST['update_suku_cadang'])) {
+    $id_suku_cadang = (int) ($_POST['id_suku_cadang'] ?? 0);
+    $nama_part = trim($_POST['edit_nama_part'] ?? '');
+    $harga_satuan = (int) preg_replace('/[^0-9]/', '', $_POST['edit_harga_satuan'] ?? '');
+    $stok = (int) preg_replace('/[^0-9]/', '', $_POST['edit_stok'] ?? '');
+
+    if ($id_suku_cadang <= 0 || $nama_part === '' || $harga_satuan < 0 || $stok < 0) {
+        header("Location: suku_cadang.php?status=edit_kosong");
+        exit;
+    }
+
+    $stmt = mysqli_prepare(
+        $koneksi,
+        "UPDATE tbl_suku_cadang SET nama_part = ?, harga_satuan = ?, stok = ? WHERE id_suku_cadang = ?"
+    );
+
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "siii", $nama_part, $harga_satuan, $stok, $id_suku_cadang);
+        $update = mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+
+        if ($update) {
+            header("Location: suku_cadang.php?status=edit_sukses");
+            exit;
+        }
+    }
+
+    header("Location: suku_cadang.php?status=edit_gagal");
+    exit;
+}
+
+if (isset($_POST['hapus_suku_cadang'])) {
+    $id_suku_cadang = (int) ($_POST['hapus_id_suku_cadang'] ?? 0);
+
+    if ($id_suku_cadang <= 0) {
+        header("Location: suku_cadang.php?status=hapus_gagal");
+        exit;
+    }
+
+    $stmt = mysqli_prepare(
+        $koneksi,
+        "DELETE FROM tbl_suku_cadang WHERE id_suku_cadang = ?"
+    );
+
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "i", $id_suku_cadang);
+        $hapus = mysqli_stmt_execute($stmt);
+        $jumlah_terhapus = mysqli_stmt_affected_rows($stmt);
+        mysqli_stmt_close($stmt);
+
+        if ($hapus && $jumlah_terhapus > 0) {
+            header("Location: suku_cadang.php?status=hapus_sukses");
+            exit;
+        }
+    }
+
+    header("Location: suku_cadang.php?status=hapus_gagal");
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -151,8 +272,39 @@ include "../config/koneksi.php";
         }
         .btn-add:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
             color: white;
+        }
+        .modal-content {
+            border: none;
+            border-radius: 22px;
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
+        }
+        .modal-header {
+            border-bottom: 1px solid #f1f5f9;
+            padding: 22px 24px 14px 24px;
+        }
+        .modal-body {
+            padding: 22px 24px;
+        }
+        .modal-footer {
+            border-top: 1px solid #f1f5f9;
+            padding: 16px 24px 22px 24px;
+        }
+        .form-label {
+            color: #334155;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .form-control {
+            border-radius: 12px;
+            border-color: #e2e8f0;
+            padding: 11px 14px;
+            font-size: 14px;
+        }
+        .form-control:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
         }
     </style>
 </head>
@@ -183,6 +335,13 @@ include "../config/koneksi.php";
                     <a href="alat_kerja.php" class="nav-link"><i class="fa-solid fa-toolbox me-3"></i>Alat Kerja</a>
                     <a href="stall.php" class="nav-link"><i class="fa-solid fa-circle-dot me-3"></i>Data Stall</a>
                 </div>
+
+                <div class="nav-section-title">MENU TRANSAKSI</div>
+                <div class="nav flex-column">
+                    <a href="booking.php" class="nav-link"><i class="fa-solid fa-tags me-3"></i>Booking</a>
+                    <a href="alat_kerja.php" class="nav-link"><i class="fa-solid fa-toolbox me-3"></i>Alat Kerja</a>
+                    <a href="stall.php" class="nav-link"><i class="fa-solid fa-circle-dot me-3"></i>Data Stall</a>
+                </div>
             </div>
             
             <div class="mb-3 pt-2">
@@ -200,10 +359,42 @@ include "../config/koneksi.php";
                     <h2 class="fw-bold m-0" style="color: #0f172a; letter-spacing: -0.5px;">Inventori Suku Cadang</h2>
                     <p class="text-muted small m-0 mt-1">Pantau stok, harga, dan ketersediaan komponen bengkel SIBEO.</p>
                 </div>
-                <a href="tambah_suku_cadang.php" class="btn btn-add">
+                <button type="button" class="btn btn-add" data-bs-toggle="modal" data-bs-target="#modalTambahSukuCadang">
                     <i class="fa-solid fa-plus me-2"></i> Tambah Komponen
-                </a>
+                </button>
             </div>
+
+            <?php if (isset($_GET['status'])) { ?>
+                <?php if ($_GET['status'] == 'sukses') { ?>
+                    <div class="alert alert-success border-0 rounded-4 shadow-sm small">
+                        Data suku cadang berhasil ditambahkan.
+                    </div>
+                <?php } elseif ($_GET['status'] == 'edit_sukses') { ?>
+                    <div class="alert alert-success border-0 rounded-4 shadow-sm small">
+                        Data suku cadang berhasil diperbarui.
+                    </div>
+                <?php } elseif ($_GET['status'] == 'hapus_sukses') { ?>
+                    <div class="alert alert-success border-0 rounded-4 shadow-sm small">
+                        Data suku cadang berhasil dihapus.
+                    </div>
+                <?php } elseif ($_GET['status'] == 'kosong' || $_GET['status'] == 'edit_kosong') { ?>
+                    <div class="alert alert-warning border-0 rounded-4 shadow-sm small">
+                        Nama komponen, harga satuan, dan stok wajib diisi dengan benar.
+                    </div>
+                <?php } elseif ($_GET['status'] == 'gagal') { ?>
+                    <div class="alert alert-danger border-0 rounded-4 shadow-sm small">
+                        Data suku cadang gagal ditambahkan. Periksa koneksi database atau struktur tabel.
+                    </div>
+                <?php } elseif ($_GET['status'] == 'edit_gagal') { ?>
+                    <div class="alert alert-danger border-0 rounded-4 shadow-sm small">
+                        Data suku cadang gagal diperbarui. Periksa koneksi database atau struktur tabel.
+                    </div>
+                <?php } elseif ($_GET['status'] == 'hapus_gagal') { ?>
+                    <div class="alert alert-danger border-0 rounded-4 shadow-sm small">
+                        Data suku cadang gagal dihapus. Data mungkin sudah tidak tersedia atau terjadi masalah pada database.
+                    </div>
+                <?php } ?>
+            <?php } ?>
 
             <div class="table-premium">
                 <div class="table-responsive">
@@ -228,7 +419,7 @@ include "../config/koneksi.php";
                             }
                             
                             while ($data = mysqli_fetch_assoc($query_sparepart)) {
-                                $stok = $data['stok'];
+                                $stok = (int) ($data['stok'] ?? 0);
                                 if ($stok <= 0) {
                                     $badge = '<span class="badge bg-danger bg-opacity-10 text-danger badge-stok">Habis</span>';
                                 } elseif ($stok <= 5) {
@@ -239,17 +430,33 @@ include "../config/koneksi.php";
                                 ?>
                                 <tr>
                                     <td class="text-center fw-bold text-muted"><?= $no++; ?></td>
-                                    <td class="fw-bold text-primary"><?= $data['kode_part']; ?></td>
-                                    <td class="fw-semibold" style="color: #0f172a;"><?= $data['nama_part']; ?></td>
-                                    <td class="fw-medium text-dark">Rp <?= number_format($data['harga_satuan'], 0, ',', '.'); ?></td>
+                                    <td class="fw-bold text-primary"><?= htmlspecialchars($data['kode_part'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
+                                    <td class="fw-semibold" style="color: #0f172a;"><?= htmlspecialchars($data['nama_part'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
+                                    <td class="fw-medium text-dark">Rp <?= number_format((int) ($data['harga_satuan'] ?? 0), 0, ',', '.'); ?></td>
                                     <td class="text-center"><?= $badge; ?></td>
                                     <td class="text-center">
-                                        <a href="edit_suku_cadang.php?id=<?= $data['id_suku_cadang']; ?>" class="btn btn-sm btn-light text-primary me-1 rounded-3">
+                                        <button type="button"
+                                                class="btn btn-sm btn-light text-primary me-1 rounded-3"
+                                                title="Edit Data"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modalEditSukuCadang"
+                                                data-id="<?= htmlspecialchars($data['id_suku_cadang'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                                data-kode="<?= htmlspecialchars($data['kode_part'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                                data-nama="<?= htmlspecialchars($data['nama_part'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                                data-harga="<?= htmlspecialchars($data['harga_satuan'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                                data-stok="<?= htmlspecialchars($data['stok'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                                             <i class="fa-solid fa-pen-to-square"></i>
-                                        </a>
-                                        <a href="hapus_suku_cadang.php?id=<?= $data['id_suku_cadang']; ?>" class="btn btn-sm btn-light text-danger rounded-3" onclick="return confirm('Apakah yakin ingin menghapus komponen ini?')">
+                                        </button>
+                                        <button type="button"
+                                                class="btn btn-sm btn-light text-danger rounded-3"
+                                                title="Hapus Data"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modalHapusSukuCadang"
+                                                data-id="<?= htmlspecialchars($data['id_suku_cadang'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                                data-kode="<?= htmlspecialchars($data['kode_part'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                                data-nama="<?= htmlspecialchars($data['nama_part'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
                                             <i class="fa-solid fa-trash-can"></i>
-                                        </a>
+                                        </button>
                                     </td>
                                 </tr>
                                 <?php
@@ -263,6 +470,145 @@ include "../config/koneksi.php";
     </div>
 </div>
 
+<div class="modal fade" id="modalTambahSukuCadang" tabindex="-1" aria-labelledby="modalTambahSukuCadangLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" action="suku_cadang.php" class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title fw-bold" id="modalTambahSukuCadangLabel" style="color: #0f172a;">Tambah Suku Cadang</h5>
+                    <p class="text-muted small mb-0 mt-1">Isi data komponen baru, lalu klik simpan.</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="kode_part" class="form-label">Kode Barang</label>
+                    <input type="text" class="form-control bg-light" id="kode_part" value="<?= htmlspecialchars($kode_part_baru, ENT_QUOTES, 'UTF-8'); ?>" readonly>
+                </div>
+                <div class="mb-3">
+                    <label for="nama_part" class="form-label">Nama Komponen</label>
+                    <input type="text" class="form-control" id="nama_part" name="nama_part" placeholder="Masukkan nama komponen" required>
+                </div>
+                <div class="mb-3">
+                    <label for="harga_satuan" class="form-label">Harga Satuan</label>
+                    <input type="number" class="form-control" id="harga_satuan" name="harga_satuan" min="0" placeholder="Contoh: 75000" required>
+                </div>
+                <div>
+                    <label for="stok" class="form-label">Stok Gudang</label>
+                    <input type="number" class="form-control" id="stok" name="stok" min="0" placeholder="Contoh: 10" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" name="simpan_suku_cadang" class="btn btn-add px-4">
+                    <i class="fa-solid fa-floppy-disk me-2"></i>Simpan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEditSukuCadang" tabindex="-1" aria-labelledby="modalEditSukuCadangLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" action="suku_cadang.php" class="modal-content">
+            <input type="hidden" id="edit_id_suku_cadang" name="id_suku_cadang">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title fw-bold" id="modalEditSukuCadangLabel" style="color: #0f172a;">Edit Suku Cadang</h5>
+                    <p class="text-muted small mb-0 mt-1">Ubah data komponen, lalu klik simpan perubahan.</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="edit_kode_part" class="form-label">Kode Barang</label>
+                    <input type="text" class="form-control bg-light" id="edit_kode_part" readonly>
+                </div>
+                <div class="mb-3">
+                    <label for="edit_nama_part" class="form-label">Nama Komponen</label>
+                    <input type="text" class="form-control" id="edit_nama_part" name="edit_nama_part" placeholder="Masukkan nama komponen" required>
+                </div>
+                <div class="mb-3">
+                    <label for="edit_harga_satuan" class="form-label">Harga Satuan</label>
+                    <input type="number" class="form-control" id="edit_harga_satuan" name="edit_harga_satuan" min="0" placeholder="Contoh: 75000" required>
+                </div>
+                <div>
+                    <label for="edit_stok" class="form-label">Stok Gudang</label>
+                    <input type="number" class="form-control" id="edit_stok" name="edit_stok" min="0" placeholder="Contoh: 10" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" name="update_suku_cadang" class="btn btn-add px-4">
+                    <i class="fa-solid fa-floppy-disk me-2"></i>Simpan Perubahan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="modalHapusSukuCadang" tabindex="-1" aria-labelledby="modalHapusSukuCadangLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" action="suku_cadang.php" class="modal-content">
+            <input type="hidden" id="hapus_id_suku_cadang" name="hapus_id_suku_cadang">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title fw-bold" id="modalHapusSukuCadangLabel" style="color: #0f172a;">Hapus Suku Cadang</h5>
+                    <p class="text-muted small mb-0 mt-1">Pastikan komponen yang dihapus sudah benar.</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning border-0 rounded-4 small mb-3">
+                    Data suku cadang yang sudah dihapus tidak bisa dikembalikan dari halaman ini.
+                </div>
+                <div class="p-3 rounded-4" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                    <div class="small text-muted fw-semibold mb-1">Kode Barang</div>
+                    <div class="fw-bold text-primary mb-3" id="hapus_kode_part">-</div>
+                    <div class="small text-muted fw-semibold mb-1">Nama Komponen</div>
+                    <div class="fw-bold" style="color: #0f172a;" id="hapus_nama_part">-</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" name="hapus_suku_cadang" class="btn btn-danger rounded-3 px-4">
+                    <i class="fa-solid fa-trash-can me-2"></i>Hapus Data
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modalEditSukuCadang = document.getElementById('modalEditSukuCadang');
+    const modalHapusSukuCadang = document.getElementById('modalHapusSukuCadang');
+
+    if (modalEditSukuCadang) {
+        modalEditSukuCadang.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+
+            document.getElementById('edit_id_suku_cadang').value = button.getAttribute('data-id') || '';
+            document.getElementById('edit_kode_part').value = button.getAttribute('data-kode') || '';
+            document.getElementById('edit_nama_part').value = button.getAttribute('data-nama') || '';
+            document.getElementById('edit_harga_satuan').value = button.getAttribute('data-harga') || '';
+            document.getElementById('edit_stok').value = button.getAttribute('data-stok') || '';
+        });
+    }
+
+    if (modalHapusSukuCadang) {
+        modalHapusSukuCadang.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+
+            document.getElementById('hapus_id_suku_cadang').value = button.getAttribute('data-id') || '';
+            document.getElementById('hapus_kode_part').textContent = button.getAttribute('data-kode') || '-';
+            document.getElementById('hapus_nama_part').textContent = button.getAttribute('data-nama') || '-';
+        });
+    }
+});
+</script>
+
 </body>
 </html>
