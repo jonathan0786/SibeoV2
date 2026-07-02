@@ -33,14 +33,14 @@ function format_rupiah($nilai) {
 }
 
 // 2. AMBIL DATA KENDARAAN MILIK PELANGGAN LOGIN
-$kendaraan = mysqli_query($koneksi, "
+$q_kendaraan = mysqli_query($koneksi, "
     SELECT * FROM tbl_kendaraan
     WHERE id_pelanggan = '$id_pelanggan'
     ORDER BY id_kendaraan DESC
 ");
 
 // 3. AMBIL DATA PAKET LAYANAN
-$paket = mysqli_query($koneksi, "
+$q_paket = mysqli_query($koneksi, "
     SELECT * FROM tbl_paket_layanan
     ORDER BY id_paket ASC
 ");
@@ -178,8 +178,8 @@ if (isset($_POST['buat_booking'])) {
                                         <label class="form-label small fw-bold text-secondary">Pilih Kendaraan</label>
                                         <select name="id_kendaraan" class="form-select form-control-lg" required>
                                             <option value="">-- Pilih Kendaraan --</option>
-                                            <?php if ($kendaraan && mysqli_num_rows($kendaraan) > 0) { ?>
-                                                <?php while ($kendaraan = mysqli_fetch_assoc($kendaraan)) { ?>
+                                            <?php if ($q_kendaraan && mysqli_num_rows($q_kendaraan) > 0) { ?>
+                                                <?php while ($kendaraan = mysqli_fetch_assoc($q_kendaraan)) { ?>
                                                     <?php
                                                         $merk  = ambil_kolom($kendaraan, ['merk', 'merek', 'brand']);
                                                         $tipe  = ambil_kolom($kendaraan, ['tipe', 'model', 'jenis']);
@@ -206,8 +206,8 @@ if (isset($_POST['buat_booking'])) {
                                         <label class="form-label small fw-bold text-secondary">Paket Layanan</label>
                                         <select name="id_paket" class="form-select form-control-lg" required>
                                             <option value="">-- Pilih Paket --</option>
-                                            <?php if ($paket && mysqli_num_rows($paket) > 0) { ?>
-                                                <?php while ($paket = mysqli_fetch_assoc($paket)) { ?>
+                                            <?php if ($q_paket && mysqli_num_rows($q_paket) > 0) { ?>
+                                                <?php while ($paket = mysqli_fetch_assoc($q_paket)) { ?>
                                                     <?php
                                                         $nama_paket = ambil_kolom($paket, ['nama_paket', 'nama_layanan', 'jenis_paket', 'paket'], 'Paket #' . $paket['id_paket']);
                                                         $harga = ambil_kolom($paket, ['harga', 'biaya', 'tarif']);
