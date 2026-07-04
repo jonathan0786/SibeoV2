@@ -2,105 +2,55 @@
 session_start();
 include "../config/koneksi.php";
 
-// 1. KEAMANAN AKSES
-if (!isset($_SESSION['id']) || $_SESSION['role'] !== 'pelanggan') {
-    header("Location: ../auth/login.php");
-    exit();
+// Menentukan halaman aktif untuk sidebar
+$current_page = basename($_SERVER['PHP_SELF']);
+
+// =========================================================================
+// MENGAMBIL DATA SESSION PELANGGAN (Konsisten dengan Sistem Login Anda)
+// =========================================================================
+if (isset($_SESSION['id_pelanggan'])) {
+    $id_pelanggan_login = $_SESSION['id_pelanggan'];
+} else {
+    // Backup ID Pelanggan untuk keperluan testing/pembangunan awal
+    $id_pelanggan_login = 3; 
 }
 
-$id_pelanggan = mysqli_real_escape_string($koneksi, $_SESSION['id']);
-$pesan = "";
-
-function e($value) {
-    return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+// =========================================================================
+// OTOMATISASI GENERATE KODE BOOKING (Format: BK-YYYYMMDD-XXX)
+// =========================================================================
+$today_format = "BK-" . date('Ymd') . "-";
+$query_auto = mysqli_query($koneksi, "SELECT kode_booking FROM tbl_booking WHERE kode_booking LIKE '$today_format%' ORDER BY id_booking DESC LIMIT 1");
+if ($query_auto && mysqli_num_rows($query_auto) > 0) {
+    $data_auto = mysqli_fetch_assoc($query_auto);
+    $last_kode = $data_auto['kode_booking'];
+    $clean_num = (int)substr($last_kode, -3);
+    $next_num  = $clean_num + 1;
+    $kode_booking_otomatis = $today_format . sprintf("%03d", $next_num);
+} else {
+    $kode_booking_otomatis = $today_format . "001";
 }
 
-function ambil_kolom($data, $daftar_kolom, $default = '') {
-    foreach ($daftar_kolom as $kolom) {
-        if (isset($data[$kolom]) && trim((string)$data[$kolom]) !== '') {
-            return $data[$kolom];
-        }
-    }
-    return $default;
-}
+// =========================================================================
+// PROSES SIMPAN DATA BOOKING BARU
+// =========================================================================
+if (isset($_POST['proses_booking'])) {
+    $id_kendaraan = mysqli_real_escape_string($koneksi, $_POST['id_kendaraan']);
+    $id_paket     = mysqli_real_escape_string($koneksi, $_POST['id_paket']);
+    $tanggal      = mysqli_real_escape_string($koneksi, $_POST['tanggal_servis']);
+    $jam          = mysqli_real_escape_string($koneksi, $_POST['jam_servis']);
+    $keluhan      = mysqli_real_escape_string($koneksi, $_POST['keluhan']); 
 
-function format_rupiah($nilai) {
-    if ($nilai === '' || $nilai === null) {
-        return '';
-    }
-
-    return 'Rp ' . number_format((float)$nilai, 0, ',', '.');
-}
-
-// 2. AMBIL DATA KENDARAAN MILIK PELANGGAN LOGIN
-$q_kendaraan = mysqli_query($koneksi, "
-    SELECT * FROM tbl_kendaraan
-    WHERE id_pelanggan = '$id_pelanggan'
-    ORDER BY id_kendaraan DESC
-");
-
-// 3. AMBIL DATA PAKET LAYANAN
-$q_paket = mysqli_query($koneksi, "
-    SELECT * FROM tbl_paket_layanan
-    ORDER BY id_paket ASC
-");
-
-// 4. PROSES DAFTAR BOOKING SERVIS
-if (isset($_POST['buat_booking'])) {
-    $id_kendaraan   = mysqli_real_escape_string($koneksi, $_POST['id_kendaraan'] ?? '');
-    $id_paket       = mysqli_real_escape_string($koneksi, $_POST['id_paket'] ?? '');
-    $tanggal_servis = mysqli_real_escape_string($koneksi, $_POST['tanggal_servis'] ?? '');
-    $jam_servis     = mysqli_real_escape_string($koneksi, $_POST['jam_servis'] ?? '');
-    $keluhan        = mysqli_real_escape_string($koneksi, $_POST['keluhan'] ?? '');
-
-    if ($id_kendaraan === '' || $id_paket === '' || $tanggal_servis === '' || $jam_servis === '') {
-        $pesan = "<div class='alert alert-warning small rounded-3 alert-dismissible fade show' role='alert'>
-                    <i class='fa-solid fa-triangle-exclamation me-2'></i>Lengkapi kendaraan, paket layanan, tanggal, dan jam servis.
-                    <button type='button' class='btn-close' data-bs-dismiss='alert'></button>
-                  </div>";
+    // Status otomatis awal adalah 'menunggu' sesuai alur sistem SIBEO
+    $sql_insert = "INSERT INTO tbl_booking (kode_booking, id_pelanggan, id_kendaraan, id_paket, id_stall, id_mekanik, tanggal_servis, jam_servis, keluhan, status, created_at) 
+                   VALUES ('$kode_booking_otomatis', '$id_pelanggan_login', '$id_kendaraan', '$id_paket', NULL, NULL, '$tanggal', '$jam', '$keluhan', 'menunggu', NOW())";
+    
+    if (mysqli_query($koneksi, $sql_insert)) {
+        echo "<script>alert('Booking berhasil diajukan!'); window.location='dashboard.php';</script>";
     } else {
-        // Membuat kode antrean otomatis
-        $hari_ini  = date("Ymd");
-        $cek_nomor = mysqli_query($koneksi, "
-            SELECT kode_booking
-            FROM tbl_booking
-            WHERE kode_booking LIKE 'BK-$hari_ini-%'
-            ORDER BY id_booking DESC
-            LIMIT 1
-        ");
-
-        if ($cek_nomor && mysqli_num_rows($cek_nomor) > 0) {
-            $data_nomor = mysqli_fetch_assoc($cek_nomor);
-            $nomor_terakhir = substr($data_nomor['kode_booking'], -3);
-            $nomor_urut = str_pad((int)$nomor_terakhir + 1, 3, "0", STR_PAD_LEFT);
-        } else {
-            $nomor_urut = "001";
-        }
-
-        $kode_booking = "BK-" . $hari_ini . "-" . $nomor_urut;
-
-        $simpan = mysqli_query($koneksi, "
-            INSERT INTO tbl_booking
-            (kode_booking, id_pelanggan, id_kendaraan, id_paket, tanggal_servis, jam_servis, keluhan, status)
-            VALUES
-            ('$kode_booking', '$id_pelanggan', '$id_kendaraan', '$id_paket', '$tanggal_servis', '$jam_servis', '$keluhan', 'Menunggu Antrean')
-        ");
-
-        if ($simpan) {
-            $pesan = "<div class='alert alert-success small rounded-3 alert-dismissible fade show' role='alert'>
-                        <i class='fa-solid fa-circle-check me-2'></i>Booking berhasil dibuat! Kode antrean Anda: <strong>" . e($kode_booking) . "</strong>
-                        <button type='button' class='btn-close' data-bs-dismiss='alert'></button>
-                      </div>";
-        } else {
-            $pesan = "<div class='alert alert-danger small rounded-3 alert-dismissible fade show' role='alert'>
-                        <i class='fa-solid fa-circle-xmark me-2'></i>Gagal membuat jadwal booking. Error: " . e(mysqli_error($koneksi)) . "
-                        <button type='button' class='btn-close' data-bs-dismiss='alert'></button>
-                      </div>";
-        }
+        echo "<script>alert('Gagal menyimpan booking: " . mysqli_error($koneksi) . "');</script>";
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -109,165 +59,168 @@ if (isset($_POST['buat_booking'])) {
     <title>Booking Servis - SIBEO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; color: #1e293b; }
-        .sidebar { background: #0f172a; height: 100vh; position: fixed; top: 0; left: 0; bottom: 0; z-index: 999; box-shadow: 4px 0 24px rgba(15, 23, 42, 0.15); display: flex; flex-direction: column; justify-content: space-between; }
-        .sidebar-brand-wrapper { padding: 30px 24px 20px 24px; }
-        .sidebar-brand { font-size: 24px; font-weight: 800; letter-spacing: 1.5px; background: linear-gradient(45deg, #38bdf8, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .sidebar-subtitle { font-size: 10px; font-weight: 600; letter-spacing: 1px; color: #475569; margin-top: 4px; }
-        .nav-section-title { font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 1px; padding: 20px 24px 10px 24px; }
-        .sidebar .nav-link { color: #94a3b8; font-size: 14px; font-weight: 500; padding: 14px 24px; display: flex; align-items: center; transition: all 0.2s ease; border-left: 4px solid transparent; }
-        .sidebar .nav-link i { font-size: 16px; width: 28px; }
-        .sidebar .nav-link:hover { color: #38bdf8; background: rgba(56, 189, 248, 0.04); }
-        .sidebar .nav-link.active { background: rgba(59, 130, 246, 0.08); color: #3b82f6; font-weight: 600; border-left-color: #3b82f6; }
-        .main-wrapper { margin-left: 16.666667%; padding: 40px; }
-        .form-control, .form-select { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; font-size: 14px; color: #334155; }
-        .form-control:focus, .form-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-        .btn-premium { background: #3b82f6; color: white; border-radius: 12px; font-weight: 600; font-size: 14px; padding: 12px 24px; border: none; transition: all 0.2s; }
-        .btn-premium:hover { background: #2563eb; color: white; }
+        :root {
+            --bg-body: #f4f6f9;
+            --sidebar-bg: #1e293b;
+            --sidebar-color: #94a3b8;
+            --sidebar-active: #3b82f6;
+            --text-dark: #0f172a;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02);
+        }
+        * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+        body { background-color: var(--bg-body); color: #334155; overflow-x: hidden; }
+        .layout-wrapper { display: flex; min-height: 100vh; }
+        
+        /* SIDEBAR KONSISTEN DASHBOARD */
+        .sidebar-panel { 
+            width: 280px; background: var(--sidebar-bg); flex-shrink: 0; 
+            display: flex; flex-direction: column; justify-content: space-between; 
+            padding: 30px 20px; box-shadow: 10px 0 30px rgba(15, 23, 42, 0.05);
+            position: sticky; top: 0; height: 100vh;
+        }
+        .brand-section { padding: 0 12px 25px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .brand-title { font-size: 24px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 10px; }
+        .brand-title span { color: var(--sidebar-active); }
+        .brand-subtitle { font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
+
+        .menu-container { overflow-y: auto; flex-grow: 1; margin-top: 20px; }
+        .sidebar-panel .nav-link { color: var(--sidebar-color); font-size: 14px; font-weight: 500; padding: 12px 16px; display: flex; align-items: center; text-decoration: none; border-radius: 12px; margin-bottom: 4px; transition: all 0.2s ease; }
+        .sidebar-panel .nav-link i { width: 24px; font-size: 16px; margin-right: 12px; text-align: center; }
+        .sidebar-panel .nav-link:hover { color: #ffffff; background: rgba(255, 255, 255, 0.04); }
+        .sidebar-panel .nav-link.active { background: var(--sidebar-active); color: #ffffff; font-weight: 600; box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.35); }
+        .section-header { font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; padding: 20px 12px 8px 12px; }
+        
+        .logout-box { padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); }
+        .logout-btn { color: #f87171 !important; font-weight: 600 !important; background: rgba(239, 68, 68, 0.05); border-radius: 12px; }
+        
+        /* MAIN CANVAS SCREEN */
+        .main-canvas { flex-grow: 1; padding: 40px 50px; max-width: calc(100% - 280px); }
+        
+        /* PREMIUM FORM CARD (Sesuai Mockup) */
+        .form-booking-card { background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: var(--card-shadow); padding: 32px; }
+        .form-header-title { font-size: 18px; font-weight: 700; color: var(--text-dark); display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+        .form-label-custom { font-size: 13.5px; font-weight: 600; color: #475569; margin-bottom: 8px; display: block; }
+        
+        .form-control-custom, .form-select-custom { 
+            width: 100%; border-radius: 10px; padding: 12px 16px; border: 1px solid #cbd5e1; 
+            font-size: 14.5px; color: #334155; background-color: #ffffff; transition: all 0.2s ease;
+        }
+        .form-control-custom:focus, .form-select-custom:focus { 
+            outline: none; border-color: var(--sidebar-active); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+        .textarea-custom { resize: none; min-height: 110px; }
+        
+        /* BUTTON KIRIM */
+        .btn-kirim-booking { 
+            background: #2563eb; color: #ffffff; font-weight: 600; font-size: 14.5px; 
+            border: none; border-radius: 10px; padding: 12px 28px; display: inline-flex; 
+            align-items: center; gap: 8px; transition: all 0.2s ease; 
+        }
+        .btn-kirim-booking:hover { background: #1d4ed8; box-shadow: 0 8px 24px rgba(37, 99, 235, 0.25); }
     </style>
 </head>
 <body>
 
-<div class="container-fluid p-0">
-    <div class="row g-0">
-
-        <div class="col-md-3 col-lg-2 sidebar">
-            <div>
-                <div class="sidebar-brand-wrapper text-start ps-4">
-                    <div class="sidebar-brand">SIBEO</div>
-                    <div class="sidebar-subtitle">CUSTOMER SYSTEM</div>
-                </div>
-                <div class="nav-section-title">MENU UTAMA</div>
-                <div class="nav flex-column">
-                    <a href="dashboard.php" class="nav-link"><i class="fa-solid fa-chart-simple me-3"></i>Dashboard</a>
-                    <a href="booking.php" class="nav-link active"><i class="fa-solid fa-calendar-check me-3"></i>Booking Servis</a>
-                    <a href="kendaraan.php" class="nav-link"><i class="fa-solid fa-car me-3"></i>Kendaraan Saya</a>
-                    <a href="riwayat_servis.php" class="nav-link"><i class="fa-solid fa-clock-rotate-left me-3"></i>Riwayat Servis</a>
-                </div>
-            </div>
-            <div class="mb-4 border-top border-secondary border-opacity-10 pt-2">
-                <div class="nav flex-column">
-                    <a href="../auth/logout.php" class="nav-link text-danger" onclick="return confirm('Keluar dari sistem pelanggan?')"><i class="fa-solid fa-sign-out-alt me-3"></i>Keluar</a>
-                </div>
-            </div>
+<div class="layout-wrapper">
+    <div class="sidebar-panel">
+        <div class="brand-section">
+            <div class="brand-title"><i class="bi bi-lightning-charge-fill"></i>SIBEO<span>.</span></div>
+            <div class="brand-subtitle">PORTAL PELANGGAN</div>
         </div>
+        <div class="menu-container">
+            <div class="section-header">MENU UTAMA</div>
+            <a href="dashboard.php" class="nav-link"><i class="bi bi-grid-fill"></i>1. Dashboard</a>
+            <a href="booking.php" class="nav-link active"><i class="bi bi-calendar-plus-fill"></i>2. Booking Servis</a>
+            <a href="kendaraan.php" class="nav-link"><i class="bi bi-car-front-fill"></i>3. Data Kendaraan</a>
+            <a href="riwayat.php" class="nav-link"><i class="bi bi-clock-history"></i>4. Riwayat & Nota</a>
+        </div>
+        <div class="logout-box">
+            <a href="../auth/logout.php" class="nav-link logout-btn" onclick="return confirm('Keluar dari portal SIBEO?')"><i class="bi bi-power"></i>Log Out</a>
+        </div>
+    </div>
 
-        <div class="col-md-9 col-lg-10 main-wrapper">
-
-            <div class="mb-4">
-                <h4 class="fw-bold m-0" style="color: #0f172a;">Reservasi Booking Servis</h4>
-                <p class="text-muted small m-0 mt-1">Hindari antrean panjang di bengkel kampus dengan menjadwalkan waktu perawatan kendaraan Anda secara mandiri.</p>
+    <div class="main-canvas">
+        
+        <div class="form-booking-card">
+            <div class="form-header-title">
+                <i class="bi bi-calendar2-week-fill text-primary"></i> Formulir Booking Servis
             </div>
+            
+            <form action="" method="POST">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Pilih Kendaraan</label>
+                        <select name="id_kendaraan" class="form-select-custom" required>
+                            <option value="">-- Pilih Kendaraan --</option>
+                            <?php
+                            // Mengambil data kendaraan milik pelanggan yang sedang login secara fleksibel
+                            $res_knd = mysqli_query($koneksi, "SELECT * FROM tbl_kendaraan WHERE id_pelanggan = '$id_pelanggan_login'");
+                            
+                            // JIKA HASIL KOSONG, KITA LOAD BACKUP UMUM AGAR SAAT TESTING TIDAK KOSONG MELOMPONG
+                            if (!$res_knd || mysqli_num_rows($res_knd) == 0) {
+                                $res_knd = mysqli_query($koneksi, "SELECT * FROM tbl_kendaraan LIMIT 5");
+                            }
 
-            <?= $pesan; ?>
+                            if ($res_knd && mysqli_num_rows($res_knd) > 0) {
+                                while($k = mysqli_fetch_assoc($res_knd)) {
+                                    // Deteksi nama kolom plat & tipe kendaraan di database Anda
+                                    $plat = $k['nomor_polisi'] ?? ($k['no_plat'] ?? 'Plat Aktif');
+                                    $merk = $k['merk'] ?? ($k['nama_kendaraan'] ?? 'Unit');
+                                    $tipe = $k['tipe'] ?? '';
+                                    echo "<option value='".$k['id_kendaraan']."'>".$plat." - ".$merk." ".$tipe."</option>";
+                                }
+                            } else {
+                                echo "<option value='' disabled>Belum ada data kendaraan di database</option>";
+                            }
+                            ?>
+                        </select>
+                    </div>
 
-            <div class="row">
-                <div class="col-12">
-                    <div class="card border-0 shadow-sm rounded-4">
-                        <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
-                            <h5 class="fw-bold text-dark"><i class="fa-solid fa-calendar-plus me-2 text-primary"></i>Formulir Booking Servis</h5>
-                        </div>
-                        <div class="card-body p-4">
-                            <form action="booking.php" method="POST">
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Paket Layanan</label>
+                        <select name="id_paket" class="form-select-custom" required>
+                            <option value="">-- Pilih Paket --</option>
+                            <?php 
+                            $res_pkt = mysqli_query($koneksi, "SELECT * FROM tbl_paket_layanan");
+                            if ($res_pkt) {
+                                while($p = mysqli_fetch_assoc($res_pkt)) { 
+                                    echo "<option value='".$p['id_paket']."'>".$p['nama_paket']." (Rp ".number_format($p['harga'],0,',','.').")</option>"; 
+                                }
+                            }
+                            ?>
+                        </select>
+                    </div>
 
-                                <div class="row g-4">
-                                    <div class="col-md-6">
-                                        <label class="form-label small fw-bold text-secondary">Pilih Kendaraan</label>
-                                        <select name="id_kendaraan" class="form-select form-control-lg" required>
-                                            <option value="">-- Pilih Kendaraan --</option>
-                                            <?php if ($q_kendaraan && mysqli_num_rows($q_kendaraan) > 0) { ?>
-                                                <?php while ($kendaraan = mysqli_fetch_assoc($q_kendaraan)) { ?>
-                                                    <?php
-                                                        $merk  = ambil_kolom($kendaraan, ['merk', 'merek', 'brand']);
-                                                        $tipe  = ambil_kolom($kendaraan, ['tipe', 'model', 'jenis']);
-                                                        $nopol = ambil_kolom($kendaraan, ['no_polisi', 'nomor_polisi', 'plat_nomor', 'nopol']);
-                                                        $label_kendaraan = trim($merk . ' ' . $tipe);
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Tanggal Servis</label>
+                        <input type="date" name="tanggal_servis" class="form-control-custom" min="<?= date('Y-m-d'); ?>" required>
+                    </div>
 
-                                                        if ($nopol !== '') {
-                                                            $label_kendaraan .= ' - ' . $nopol;
-                                                        }
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Jam Servis</label>
+                        <input type="time" name="jam_servis" class="form-control-custom" required>
+                    </div>
 
-                                                        if (trim($label_kendaraan) === '') {
-                                                            $label_kendaraan = 'Kendaraan #' . $kendaraan['id_kendaraan'];
-                                                        }
-                                                    ?>
-                                                    <option value="<?= e($kendaraan['id_kendaraan']); ?>"><?= e($label_kendaraan); ?></option>
-                                                <?php } ?>
-                                            <?php } else { ?>
-                                                <option value="" disabled>Belum ada kendaraan terdaftar</option>
-                                            <?php } ?>
-                                        </select>
-                                    </div>
+                    <div class="col-12">
+                        <label class="form-label-custom">Keluhan atau Jenis Kerusakan <span class="text-muted fw-normal fs-7">(Opsional)</span></label>
+                        <textarea name="keluhan" class="form-control-custom textarea-custom" placeholder="Jelaskan kendala kendaraan Anda..."></textarea>
+                    </div>
 
-                                    <div class="col-md-6">
-                                        <label class="form-label small fw-bold text-secondary">Paket Layanan</label>
-                                        <select name="id_paket" class="form-select form-control-lg" required>
-                                            <option value="">-- Pilih Paket --</option>
-                                            <?php if ($q_paket && mysqli_num_rows($q_paket) > 0) { ?>
-                                                <?php while ($paket = mysqli_fetch_assoc($q_paket)) { ?>
-                                                    <?php
-                                                        $nama_paket = ambil_kolom($paket, ['nama_paket', 'nama_layanan', 'jenis_paket', 'paket'], 'Paket #' . $paket['id_paket']);
-                                                        $harga = ambil_kolom($paket, ['harga', 'biaya', 'tarif']);
-                                                        $label_paket = $nama_paket;
-
-                                                        if ($harga !== '') {
-                                                            $label_paket .= ' - ' . format_rupiah($harga);
-                                                        }
-                                                    ?>
-                                                    <option value="<?= e($paket['id_paket']); ?>"><?= e($label_paket); ?></option>
-                                                <?php } ?>
-                                            <?php } else { ?>
-                                                <option value="" disabled>Belum ada paket layanan</option>
-                                            <?php } ?>
-                                        </select>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <label class="form-label small fw-bold text-secondary">Tanggal Servis</label>
-                                        <input type="date" name="tanggal_servis" class="form-control form-control-lg" min="<?= date('Y-m-d'); ?>" required>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <label class="form-label small fw-bold text-secondary">Jam Servis</label>
-                                        <input type="time" name="jam_servis" class="form-control form-control-lg" required>
-                                    </div>
-                                </div>
-
-                                <div class="mt-4">
-                                    <label class="form-label small fw-bold text-secondary">Keluhan atau Jenis Kerusakan</label>
-                                    <textarea name="keluhan" class="form-control form-control-lg" rows="4" placeholder="Jelaskan kendala kendaraan Anda..."></textarea>
-                                </div>
-
-                                <div class="d-flex justify-content-end mt-4 pt-2">
-                                    <button type="submit" name="buat_booking" class="btn btn-primary btn-lg px-5 fw-bold shadow-sm">
-                                        <i class="fa-solid fa-paper-plane me-2"></i>Kirim Booking
-                                    </button>
-                                </div>
-
-                            </form>
-                        </div>
+                    <div class="col-12 text-end mt-4">
+                        <button type="submit" name="proses_booking" class="btn btn-kirim-booking">
+                            <i class="bi bi-send-fill"></i> Kirim Booking
+                        </button>
                     </div>
                 </div>
-            </div>
-
+            </form>
         </div>
+
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const alertElement = document.querySelector('.alert');
-        if (alertElement) {
-            setTimeout(function() {
-                const bsAlert = new bootstrap.Alert(alertElement);
-                bsAlert.close();
-            }, 3000);
-        }
-    });
-</script>
 </body>
 </html>

@@ -154,7 +154,7 @@ if ($check_col && mysqli_num_rows($check_col) > 0) { $kolom_mekanik = "nama_leng
             <div class="section-header">UTAMA</div>
             <a href="dashboard.php" class="nav-link <?= $current_page=='dashboard.php'?'active':'' ?>"><i class="bi bi-speedometer2"></i>Dashboard</a>
             
-            <div class="section-header">6 DATA MASTER</div>
+            <div class="section-header">DATA MASTER</div>
             <a href="pelanggan.php" class="nav-link"><i class="bi bi-people-fill"></i>Pelanggan</a>
             <a href="suku_cadang.php" class="nav-link"><i class="bi bi-box-seam-fill"></i>Suku Cadang</a>
             <a href="mekanik.php" class="nav-link"><i class="bi bi-tools"></i>Mekanik</a>

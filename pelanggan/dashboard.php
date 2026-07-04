@@ -2,23 +2,37 @@
 session_start();
 include "../config/koneksi.php";
 
-// 1. PERBAIKAN SESSION: Cek menggunakan $_SESSION['id'] dan $_SESSION['role'] sesuai login.php
-if (!isset($_SESSION['id']) || $_SESSION['role'] !== 'pelanggan') {
-    header("Location: ../auth/login.php");
-    exit();
-}
+$current_page = basename($_SERVER['PHP_SELF']);
 
-$id_pelanggan = $_SESSION['id'];
+// =========================================================================
+// MENGAMBIL DATA SESSION PELANGGAN (Sesuaikan dengan variabel login Anda)
+// =========================================================================
+// Jika Anda menggunakan login, silakan aktifkan baris di bawah ini:
+// $id_pelanggan_login = $_SESSION['id_pelanggan'];
+// $nama_pelanggan_login = $_SESSION['nama_lengkap'];
 
-// 2. PERBAIKAN QUERY & STATISTIK
-// Menghitung jumlah kendaraan milik pelanggan yang sedang login
-$hitung_kendaraan = mysqli_num_rows(mysqli_query($koneksi, "SELECT id_kendaraan FROM tbl_kendaraan WHERE id_pelanggan = '$id_pelanggan'"));
+// Dummy data untuk pengetesan awal
+$id_pelanggan_login = 3; 
+$nama_pelanggan_login = "Pelanggan SIBEO"; 
 
-// CATATAN: Karena tbl_servis tidak ada, pastikan nama tabel transaksi/booking Anda sudah benar.
-// Jika nama tabel Anda bukan 'tbl_booking', silakan ganti teks 'tbl_booking' di bawah ini sesuai nama tabel di database Anda.
-$query_hitung_servis = mysqli_query($koneksi, "SELECT * FROM tbl_booking WHERE id_pelanggan = '$id_pelanggan'");
-$hitung_servis = $query_hitung_servis ? mysqli_num_rows($query_hitung_servis) : 0;
+// =========================================================================
+// AGREGASI DATA STATISTIK DARI DATABASE
+// =========================================================================
+// 1. Hitung Servis Berjalan (status: menunggu, terkonfirmasi, dalam_proses)
+$servis_berjalan = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM tbl_booking WHERE id_pelanggan = '$id_pelanggan_login' AND status IN ('menunggu', 'terkonfirmasi', 'dalam_proses')"))['total'];
 
+// 2. Hitung Total Kunjungan yang sudah selesai
+$total_servis = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM tbl_booking WHERE id_pelanggan = '$id_pelanggan_login' AND status = 'selesai'"))['total'];
+
+// 3. Hitung Total Pengeluaran Servis menggunakan UDF
+$biaya_res = mysqli_query($koneksi, "
+    SELECT SUM(udf_hitung_total(pk.harga)) AS total_pengeluaran 
+    FROM tbl_booking b
+    JOIN tbl_paket_layanan pk ON b.id_paket = pk.id_paket
+    WHERE b.id_pelanggan = '$id_pelanggan_login' AND b.status = 'selesai'
+");
+$data_biaya = mysqli_fetch_assoc($biaya_res);
+$total_pengeluaran = $data_biaya['total_pengeluaran'] ?? 0;
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -28,286 +42,211 @@ $hitung_servis = $query_hitung_servis ? mysqli_num_rows($query_hitung_servis) : 
     <title>Dashboard Pelanggan - SIBEO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
     <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f1f5f9;
-            color: #1e293b;
+        :root {
+            --bg-body: #f4f6f9;
+            --sidebar-bg: #1e293b;
+            --sidebar-color: #94a3b8;
+            --sidebar-active: #3b82f6;
+            --text-dark: #0f172a;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
         }
-        /* Layout Sidebar Flexbox Tinggi Penuh */
-        .sidebar {
-            background: #0f172a;
-            height: 100vh;
-            position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            z-index: 999;
-            box-shadow: 4px 0 24px rgba(15, 23, 42, 0.15);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        .sidebar-brand-wrapper {
-            padding: 30px 24px 20px 24px;
-        }
-        .sidebar-brand {
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: 1.5px;
-            background: linear-gradient(45deg, #38bdf8, #3b82f6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .sidebar-subtitle {
-            font-size: 10px; 
-            font-weight: 600; 
-            letter-spacing: 1px; 
-            color: #475569;
-            margin-top: 4px;
-        }
-        .nav-section-title {
-            font-size: 11px;
-            font-weight: 700;
-            color: #475569;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            padding: 20px 24px 10px 24px;
-        }
-        .sidebar .nav-link {
-            color: #94a3b8;
-            font-size: 14px;
-            font-weight: 500;
-            padding: 14px 24px;
-            display: flex;
-            align-items: center;
-            transition: all 0.2s ease;
-            border-left: 4px solid transparent;
-        }
-        .sidebar .nav-link i {
-            font-size: 16px;
-            width: 28px;
-        }
-        .sidebar .nav-link:hover {
-            color: #38bdf8;
-            background: rgba(56, 189, 248, 0.04);
-        }
-        .sidebar .nav-link.active {
-            background: rgba(59, 130, 246, 0.08);
-            color: #3b82f6;
-            font-weight: 600;
-            border-left-color: #3b82f6;
-        }
+        * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+        body { background-color: var(--bg-body); color: #334155; overflow-x: hidden; }
+        .layout-wrapper { display: flex; min-height: 100vh; }
         
-        /* Main Content Adjustment */
-        .main-wrapper {
-            margin-left: 16.666667%; 
-            padding: 40px;
+        /* SIDEBAR COMPONENT */
+        .sidebar-panel { 
+            width: 280px; background: var(--sidebar-bg); flex-shrink: 0; 
+            display: flex; flex-direction: column; justify-content: space-between; 
+            padding: 30px 20px; box-shadow: 10px 0 30px rgba(15, 23, 42, 0.05);
+            position: sticky; top: 0; height: 100vh;
         }
-        
-        /* Banner Atas */
-        .welcome-banner {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border-radius: 24px;
-            padding: 35px;
-            color: white;
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-        }
-        .welcome-banner p {
-            color: rgba(255, 255, 255, 0.7) !important;
-        }
+        .brand-section { padding: 0 12px 25px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .brand-title { font-size: 24px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 10px; }
+        .brand-title span { color: var(--sidebar-active); }
+        .brand-subtitle { font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
 
-        /* Info Cards */
-        .stat-card-premium {
-            background: white;
-            border: none;
-            border-radius: 24px;
-            padding: 28px;
-            box-shadow: 0 4px 18px rgba(148, 163, 184, 0.08);
-        }
-        .icon-shape {
-            width: 50px;
-            height: 50px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
+        .menu-container { overflow-y: auto; flex-grow: 1; margin-top: 20px; }
+        .menu-container::-webkit-scrollbar { width: 4px; }
+        .menu-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+        .section-header { font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; padding: 20px 12px 8px 12px; }
+        .sidebar-panel .nav-link { color: var(--sidebar-color); font-size: 14px; font-weight: 500; padding: 12px 16px; display: flex; align-items: center; text-decoration: none; border-radius: 12px; margin-bottom: 4px; transition: all 0.2s ease; }
+        .sidebar-panel .nav-link i { width: 24px; font-size: 16px; margin-right: 12px; text-align: center; }
+        .sidebar-panel .nav-link:hover { color: #ffffff; background: rgba(255, 255, 255, 0.04); }
+        .sidebar-panel .nav-link.active { background: var(--sidebar-active); color: #ffffff; font-weight: 600; box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.35); }
+
+        .logout-box { padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); }
+        .logout-btn { color: #f87171 !important; font-weight: 600 !important; background: rgba(239, 68, 68, 0.05); border-radius: 12px; }
+        .logout-btn:hover { background: #ef4444 !important; color: #ffffff !important; }
         
-        /* Tabel */
-        .table-premium {
-            background: white;
-            border-radius: 24px;
-            box-shadow: 0 4px 18px rgba(148, 163, 184, 0.08);
-            padding: 25px;
-        }
-        .table-premium thead th {
-            background-color: #f8fafc;
-            color: #64748b;
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 16px 20px;
-            border-bottom: none;
-        }
-        .table-premium tbody td {
-            padding: 18px 20px;
-            border-bottom: 1px solid #f1f5f9;
-            color: #475569;
-            font-size: 14px;
-        }
+        /* MAIN CANVAS SCREEN */
+        .main-canvas { flex-grow: 1; padding: 40px 50px; max-width: calc(100% - 280px); }
+        
+        /* STATISTIK CARD */
+        .stat-card { background: #ffffff; border-radius: 18px; border: 1px solid #e2e8f0; padding: 24px; box-shadow: var(--card-shadow); display: flex; align-items: center; justify-content: space-between; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .stat-value { font-size: 24px; font-weight: 800; color: var(--text-dark); margin: 4px 0 0 0; }
+        .stat-label { font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin: 0; }
+
+        /* HERO CARD WELCOME */
+        .welcome-hero { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); border-radius: 20px; padding: 35px; color: #ffffff; position: relative; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.2); }
+        .welcome-hero::after { content: ''; position: absolute; width: 300px; height: 300px; background: rgba(255, 255, 255, 0.08); border-radius: 50%; right: -50px; top: -50px; }
+        
+        /* PREMIUM DATA TABLE */
+        .data-card-premium { background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: var(--card-shadow); overflow: hidden; }
+        .data-card-header { padding: 24px; background: #ffffff; border-bottom: 1px solid #f1f5f9; }
+        .data-card-title { font-size: 16px; font-weight: 700; color: var(--text-dark); margin: 0; }
+        .table-premium thead th { background: #f8fafc; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 16px 20px; border-bottom: 1px solid #e2e8f0; }
+        .table-premium tbody td { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #334155; }
     </style>
 </head>
 <body>
 
-<div class="container-fluid p-0">
-    <div class="row g-0">
-        
-        <div class="col-md-3 col-lg-2 sidebar">
-            <div>
-                <div class="sidebar-brand-wrapper text-start ps-4">
-                    <div class="sidebar-brand">SIBEO</div>
-                    <div class="sidebar-subtitle">CUSTOMER SYSTEM</div>
-                </div>
-                
-                <div class="nav-section-title">MENU UTAMA</div>
-                <div class="nav flex-column">
-                    <a href="dashboard.php" class="nav-link active"><i class="fa-solid fa-chart-simple me-3"></i>Dashboard</a>
-                    <a href="booking.php" class="nav-link"><i class="fa-solid fa-calendar-check me-3"></i>Booking Servis</a>
-                    <a href="kendaraan.php" class="nav-link"><i class="fa-solid fa-car me-3"></i>Kendaraan Saya</a>
-                    <a href="riwayat_servis.php" class="nav-link"><i class="fa-solid fa-clock-rotate-left me-3"></i>Riwayat Servis</a>
-                </div>
-            </div>
-            
-            <div class="mb-4 border-top border-secondary border-opacity-10 pt-2">
-                <div class="nav flex-column">
-                    <a href="../auth/logout.php" class="nav-link text-danger" onclick="return confirm('Keluar dari sistem')"><i class="fa-solid fa-sign-out-alt me-3"></i>Keluar</a>
+<div class="layout-wrapper">
+    <div class="sidebar-panel">
+        <div class="brand-section">
+            <div class="brand-title"><i class="bi bi-lightning-charge-fill"></i>SIBEO<span>.</span></div>
+            <div class="brand-subtitle">PORTAL PELANGGAN</div>
+        </div>
+        <div class="menu-container">
+            <div class="section-header">MENU UTAMA</div>
+            <a href="dashboard.php" class="nav-link active"><i class="bi bi-speedometer2"></i>1. Dashboard</a>
+            <a href="booking.php" class="nav-link"><i class="bi bi-calendar-plus-fill"></i>2. Booking Servis</a>
+            <a href="kendaraan.php" class="nav-link"><i class="bi bi-car-front-fill"></i>3. Data Kendaraan</a>
+            <a href="riwayat.php" class="nav-link"><i class="bi bi-clock-history"></i>4. Riwayat & Nota</a>
+        </div>
+        <div class="logout-box">
+            <a href="../auth/logout.php" class="nav-link logout-btn" onclick="return confirm('Keluar dari portal SIBEO?')"><i class="bi bi-power"></i>Log Out</a>
+        </div>
+    </div>
+
+    <div class="main-canvas">
+        <div class="mb-4">
+            <h3 class="fw-bold text-dark m-0">Dashboard Pelanggan</h3>
+            <p class="text-muted small m-0 mt-1">Pantau status pengerjaan workshop dan kelayakan kendaraan Anda.</p>
+        </div>
+
+        <div class="welcome-hero mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-9" style="z-index: 2;">
+                    <span class="badge bg-white text-primary px-3 py-1.5 mb-3 fw-bold small text-uppercase" style="letter-spacing: 0.5px;">Selamat Datang</span>
+                    <h2 class="fw-bold text-white mb-2">Halo, Semangat Beraktivitas!</h2>
+                    <p class="text-white-50 m-0" style="font-size: 14px; max-width: 600px;">Gunakan layanan pemantauan berkala untuk memastikan performa kendaraan Anda selalu dalam kondisi prima dan aman berkendara.</p>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-9 col-lg-10 main-wrapper">
-            
-            <div class="welcome-banner mb-4">
-                <span class="badge mb-3 px-3 py-2" style="font-size: 11px; font-weight: 800; letter-spacing: 1px; background: rgba(255, 255, 255, 0.15); color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.25);">AKUN CIVITAS AKTIF</span>
-                <h1 class="fw-bold m-0 mb-2" style="font-size: 28px; letter-spacing: -0.5px;">Selamat Datang, <?= $_SESSION['nama_lengkap']; ?></h1>
-                <p class="small m-0">Pantau status pengerjaan mekanik secara langsung, kelola data kendaraan pribadi Anda, dan lakukan registrasi booking secara mandiri.</p>
-            </div>
-
-            <div class="row g-4 mb-5">
-                
-                <div class="col-md-6 col-lg-4">
-                    <div class="stat-card-premium">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <span class="text-muted text-uppercase fw-bold" style="font-size: 11px; letter-spacing: 0.5px; color: #94a3b8 !important;">GARASI KENDARAAN</span>
-                                <h2 class="fw-extrabold mb-0 mt-2" style="color: #0f172a; font-size: 32px; font-weight: 800;"><?= $hitung_kendaraan; ?> <span style="font-size: 14px; font-weight: 500; color: #64748b;">Unit</span></h2>
-                            </div>
-                            <div class="icon-shape bg-primary bg-opacity-10 text-primary">
-                                <i class="fa-solid fa-car-side"></i>
-                            </div>
-                        </div>
-                        <div class="mt-3 pt-3 border-top border-light">
-                            <a href="kendaraan.php" class="text-decoration-none small fw-bold text-primary">Lihat Kendaraan Saya &nbsp;&rarr;</a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-6 col-lg-4">
-                    <div class="stat-card-premium">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div>
-                                <span class="text-muted text-uppercase fw-bold" style="font-size: 11px; letter-spacing: 0.5px; color: #94a3b8 !important;">TOTAL REKAP SERVIS</span>
-                                <h2 class="fw-extrabold mb-0 mt-2" style="color: #0f172a; font-size: 32px; font-weight: 800;"><?= $hitung_servis; ?> <span style="font-size: 14px; font-weight: 500; color: #64748b;">Aktivitas</span></h2>
-                            </div>
-                            <div class="icon-shape bg-success bg-opacity-10 text-success">
-                                <i class="fa-solid fa-wrench"></i>
-                            </div>
-                        </div>
-                        <div class="mt-3 pt-3 border-top border-light">
-                            <a href="riwayat_servis.php" class="text-decoration-none small fw-bold text-success">Lihat Log Aktivitas &nbsp;&rarr;</a>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="table-premium">
-                <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="stat-card">
                     <div>
-                        <h5 class="fw-bold m-0" style="color: #0f172a;">Status Servis Kendaraan Terbaru</h5>
-                        <p class="text-muted small m-0 mt-1">Status dan riwayat pengerjaan kendaraan Anda yang sedang atau telah diproses.</p>
+                        <p class="stat-label">Servis Berjalan</p>
+                        <h3 class="stat-value"><?= $servis_berjalan; ?> <span class="text-muted fs-6 fw-normal">Unit</span></h3>
                     </div>
-                    <a href="riwayat_servis.php" class="btn btn-sm btn-outline-secondary rounded-3 px-3 py-1.5 fw-semibold" style="font-size: 12px;">Lihat Semua</a>
+                    <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
                 </div>
-                
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th>NO. ANTREAN</th>
-                                <th>KENDARAAN / PLAT NO.</th>
-                                <th>PAKET LAYANAN</th>
-                                <th>JADWAL & STALL</th>
-                                <th class="text-center">STATUS</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-<?php
-// QUERY TERBARU: Menggabungkan 3 tabel sekaligus (Booking, Kendaraan, dan Paket)
-$tampil_terbaru = mysqli_query($koneksi, "SELECT b.*, k.merk, k.nomor_polisi, p.nama_paket 
-                                        FROM tbl_booking b 
-                                        JOIN tbl_kendaraan k ON b.id_kendaraan = k.id_kendaraan 
-                                        JOIN tbl_paket_layanan p ON b.id_paket = p.id_paket
-                                        WHERE b.id_pelanggan = '$id_pelanggan' 
-                                        ORDER BY b.id_booking DESC LIMIT 3");
-                                        
-if (!$tampil_terbaru || mysqli_num_rows($tampil_terbaru) == 0) {
-    echo "<tr><td colspan='5' class='text-center text-muted small py-4'>Belum ada riwayat booking atau servis kendaraan.</td></tr>";
-} else {
-    while ($r = mysqli_fetch_assoc($tampil_terbaru)) {
-        
-        $status = $r['status']; 
-        $badge_class = "bg-warning text-warning";
-        
-        if ($status == "Selesai") {
-            $badge_class = "bg-success text-success";
-        } elseif ($status == "Sedang Dikerjakan" || $status == "Proses" || $status == "Sedang Diproses") {
-            $badge_class = "bg-primary text-primary";
-        }
-        ?>
-        <tr>
-            <td class="fw-bold text-primary"><?= $r['kode_booking']; ?></td>
+            </div>
             
-            <td class="fw-semibold" style="color: #0f172a;">
-                <?= htmlspecialchars($r['merk']); ?> 
-                (<code class="text-secondary"><?= htmlspecialchars($r['nomor_polisi']); ?></code>)
-            </td>
-            
-            <td>
-                <span class="fw-medium"><?= htmlspecialchars($r['nama_paket']); ?></span>
-            </td>
-            
-            <td><?= $r['tanggal_servis']; ?> (<span class="text-secondary"><?= substr($r['jam_servis'], 0, 5); ?></span>)</td>
-            
-            <td class="text-center">
-                <span class="badge bg-opacity-10 <?= $badge_class; ?> px-2 py-1 rounded small" style="font-size: 12px; font-weight: 600;"><?= $status; ?></span>
-            </td>
-        </tr>
-        <?php
-    }
-}
-?>
-</tbody>    
-                    </table>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div>
+                        <p class="stat-label">Total Kunjungan</p>
+                        <h3 class="stat-value"><?= $total_servis; ?> <span class="text-muted fs-6 fw-normal">Kali</span></h3>
+                    </div>
+                    <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-tools"></i>
+                    </div>
                 </div>
             </div>
 
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div>
+                        <p class="stat-label">Total Biaya Servis</p>
+                        <h3 class="stat-value">Rp <?= number_format($total_pengeluaran, 0, ',', '.'); ?></h3>
+                    </div>
+                    <div class="stat-icon bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        <div class="data-card-premium">
+            <div class="data-card-header d-flex justify-content-between align-items-center">
+                <h5 class="data-card-title"><i class="bi bi-broadcast text-primary me-2"></i>Status Pelayanan Kendaraan Anda</h5>
+                <a href="booking.php" class="btn btn-sm btn-primary fw-semibold" style="border-radius: 8px; font-size: 12.5px;">
+                    <i class="bi bi-plus-circle me-1"></i> Buat Antrean Baru
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-premium align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Kode Booking</th>
+                            <th>Paket Servis</th>
+                            <th>Lokasi Stall</th>
+                            <th>Mekanik</th>
+                            <th>Status Terkini</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        // Memperbaiki Fatal Error: Menggunakan 'm.nama' sesuai struktur kolom di tabel database Anda
+                        $query_live = mysqli_query($koneksi, "
+                            SELECT b.*, pk.nama_paket, 
+                                   IFNULL(m.nama, '-') AS nama_mekanik, 
+                                   IFNULL(s.nomor_stall, '-') AS nomor_stall
+                            FROM tbl_booking b
+                            LEFT JOIN tbl_paket_layanan pk ON b.id_paket = pk.id_paket
+                            LEFT JOIN tbl_mekanik m ON b.id_mekanik = m.id_mekanik
+                            LEFT JOIN tbl_stall s ON b.id_stall = s.id_stall
+                            WHERE b.id_pelanggan = '$id_pelanggan_login'
+                            ORDER BY b.id_booking DESC LIMIT 3
+                        ");
+
+                        if ($query_live && mysqli_num_rows($query_live) > 0) {
+                            while ($data = mysqli_fetch_assoc($query_live)) {
+                                $st = strtolower($data['status']);
+                                ?>
+                                <tr>
+                                    <td><span class="badge bg-light text-dark border px-2 py-1 fw-bold"><?= htmlspecialchars($data['kode_booking']); ?></span></td>
+                                    <td><strong class="text-dark"><?= htmlspecialchars($data['nama_paket']); ?></strong></td>
+                                    <td>
+                                        <span class="text-primary fw-bold"><i class="bi bi-geo-alt me-1"></i>Stall: <?= htmlspecialchars($data['nomor_stall']); ?></span>
+                                    </td>
+                                    <td><i class="bi bi-person text-secondary me-1"></i><?= htmlspecialchars($data['nama_mekanik']); ?></td>
+                                    <td>
+                                        <?php 
+                                        if($st == 'menunggu' || $st == 'menunggu antrean') {
+                                            echo '<span class="badge bg-secondary px-2 py-1 text-uppercase small fw-bold">Menunggu Validasi</span>';
+                                        } elseif($st == 'terkonfirmasi') {
+                                            echo '<span class="badge bg-info text-dark px-2 py-1 text-uppercase small fw-bold">Antrean Dijadwalkan</span>';
+                                        } elseif($st == 'dalam proses' || $st == 'dalam_proses') {
+                                            echo '<span class="badge bg-warning text-dark px-2 py-1 text-uppercase small fw-bold"><i class="bi bi-hourglass-split me-1"></i>Sedang Dikerjakan</span>';
+                                        } else {
+                                            echo '<span class="badge bg-success px-2 py-1 text-uppercase small fw-bold"><i class="bi bi-check-all me-1"></i>Selesai</span>';
+                                        }
+                                        ?>
+                                    </td>
+                                </tr>
+                                <?php 
+                            }
+                        } else {
+                            echo "<tr><td colspan='5' class='text-center text-muted py-5 small'><i class='bi bi-calendar-x d-block fs-2 mb-2 opacity-50'></i>Belum ada rekaman aktivitas pelayanan.</td></tr>";
+                        }
+                        ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 </div>
 
