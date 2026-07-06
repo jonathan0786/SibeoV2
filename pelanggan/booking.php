@@ -8,11 +8,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
 // =========================================================================
 // MENGAMBIL DATA SESSION PELANGGAN (Konsisten dengan Sistem Login Anda)
 // =========================================================================
-if (isset($_SESSION['id_pelanggan'])) {
+if (isset($_SESSION['id']) && $_SESSION['role'] === 'pelanggan') {
+    $id_pelanggan_login = $_SESSION['id'];
+} elseif (isset($_SESSION['id_pelanggan'])) {
     $id_pelanggan_login = $_SESSION['id_pelanggan'];
 } else {
-    // Backup ID Pelanggan untuk keperluan testing/pembangunan awal
-    $id_pelanggan_login = 3; 
+    header("Location: ../auth/login.php");
+    exit();
 }
 
 // =========================================================================
@@ -41,13 +43,13 @@ if (isset($_POST['proses_booking'])) {
     $keluhan      = mysqli_real_escape_string($koneksi, $_POST['keluhan']); 
 
     // Status otomatis awal adalah 'menunggu' sesuai alur sistem SIBEO
-    $sql_insert = "INSERT INTO tbl_booking (kode_booking, id_pelanggan, id_kendaraan, id_paket, id_stall, id_mekanik, tanggal_servis, jam_servis, keluhan, status, created_at) 
-                   VALUES ('$kode_booking_otomatis', '$id_pelanggan_login', '$id_kendaraan', '$id_paket', NULL, NULL, '$tanggal', '$jam', '$keluhan', 'menunggu', NOW())";
+    // Memanggil Stored Procedure sp_tambah_booking
+    $sql_insert = "CALL sp_tambah_booking('$kode_booking_otomatis', '$id_pelanggan_login', '$id_kendaraan', '$id_paket', '$keluhan')";
     
     if (mysqli_query($koneksi, $sql_insert)) {
         echo "<script>alert('Booking berhasil diajukan!'); window.location='dashboard.php';</script>";
     } else {
-        echo "<script>alert('Gagal menyimpan booking: " . mysqli_error($koneksi) . "');</script>";
+        echo "<script>alert('Gagal menyimpan booking: " . mysqli_real_escape_string($koneksi, mysqli_error($koneksi)) . "');</script>";
     }
 }
 ?>

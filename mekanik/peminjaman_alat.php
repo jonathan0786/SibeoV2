@@ -50,7 +50,34 @@ if (isset($_POST['pinjam_alat'])) {
     }
 }
 
-// 3. PROSES PENGEMBALIAN ALAT
+// 3. PROSES PENGEMBALIAN ALAT (Via POST - Dengan Pilihan Kondisi)
+if (isset($_POST['kembalikan_alat'])) {
+    $id_peminjaman = mysqli_real_escape_string($koneksi, $_POST['id_peminjaman']);
+    $kondisi_kembali = mysqli_real_escape_string($koneksi, $_POST['kondisi_kembali']);
+    $waktu_kembali = date('Y-m-d H:i:s');
+
+    $cek_kembali = mysqli_query($koneksi, "SELECT id_alat, jumlah_pinjam FROM tbl_peminjaman_alat WHERE id_peminjaman = '$id_peminjaman'");
+    $data_k = mysqli_fetch_assoc($cek_kembali);
+    $id_alat = $data_k['id_alat'];
+    $jumlah_pinjam = $data_k['jumlah_pinjam'];
+
+    $query_kembali = "UPDATE tbl_peminjaman_alat 
+                      SET waktu_kembali = '$waktu_kembali', 
+                          status = 'dikembalikan', 
+                          kondisi_kembali = '$kondisi_kembali' 
+                      WHERE id_peminjaman = '$id_peminjaman'";
+
+    if (mysqli_query($koneksi, $query_kembali)) {
+        if ($kondisi_kembali == 'baik') {
+            mysqli_query($koneksi, "UPDATE tbl_alat_kerja SET jumlah = jumlah + $jumlah_pinjam WHERE id_alat = '$id_alat'");
+        }
+        echo "<script>alert('Alat berhasil dikembalikan dengan kondisi: " . ucfirst($kondisi_kembali) . "!'); window.location='peminjaman_alat.php';</script>";
+    } else {
+        echo "<script>alert('Gagal memproses pengembalian: " . mysqli_error($koneksi) . "');</script>";
+    }
+}
+
+// 3b. PROSES PENGEMBALIAN ALAT (Via GET - Fallback Default Baik)
 if (isset($_GET['aksi']) && $_GET['aksi'] == 'kembali') {
     $id_peminjaman = mysqli_real_escape_string($koneksi, $_GET['id']);
     $waktu_kembali = date('Y-m-d H:i:s');
@@ -60,7 +87,7 @@ if (isset($_GET['aksi']) && $_GET['aksi'] == 'kembali') {
     $id_alat = $data_k['id_alat'];
     $jumlah_pinjam = $data_k['jumlah_pinjam'];
 
-    $query_kembali = "UPDATE tbl_peminjaman_alat SET waktu_kembali = '$waktu_kembali', status = 'dikembalikan' WHERE id_peminjaman = '$id_peminjaman'";
+    $query_kembali = "UPDATE tbl_peminjaman_alat SET waktu_kembali = '$waktu_kembali', status = 'dikembalikan', kondisi_kembali = 'baik' WHERE id_peminjaman = '$id_peminjaman'";
 
     if (mysqli_query($koneksi, $query_kembali)) {
         mysqli_query($koneksi, "UPDATE tbl_alat_kerja SET jumlah = jumlah + $jumlah_pinjam WHERE id_alat = '$id_alat'");
@@ -219,9 +246,14 @@ if (isset($_GET['aksi']) && $_GET['aksi'] == 'kembali') {
                                         </td>
                                         <td class="text-center">
                                             <?php if ($status == 'dipinjam'): ?>
-                                                <a href="peminjaman_alat.php?aksi=kembali&id=<?= $r['id_peminjaman']; ?>" class="btn btn-sm btn-outline-success px-3 rounded-pill" style="font-size:12px;" onclick="return confirm('Apakah Anda ingin mengembalikan alat ini?')">
+                                                <button class="btn btn-sm btn-outline-success px-3 rounded-pill btn-kembali-trigger" 
+                                                        style="font-size:12px;" 
+                                                        data-id="<?= $r['id_peminjaman']; ?>"
+                                                        data-nama="<?= htmlspecialchars($r['nama_alat']); ?>"
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#modalKembali">
                                                     <i class="fa-solid fa-arrow-rotate-left me-1"></i> Kembali
-                                                </a>
+                                                </button>
                                             <?php else: ?>
                                                 <button class="btn btn-sm btn-light px-3 rounded-pill text-muted" style="font-size:12px;" disabled><i class="fa-solid fa-circle-check"></i> Selesai</button>
                                             <?php endif; ?>
@@ -294,6 +326,55 @@ if (isset($_GET['aksi']) && $_GET['aksi'] == 'kembali') {
     </div>
 </div>
 
+<div class="modal fade" id="modalKembali" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 380px;">
+        <div class="modal-content">
+            <form method="POST" action="">
+                <div class="modal-header py-3 px-4" style="border-bottom: 1px solid #f1f5f9;">
+                    <h6 class="modal-title fw-bold text-dark m-0" style="font-size: 15px;">Pengembalian Alat</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="font-size: 11px;"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" name="id_peminjaman" id="kembali_id_peminjaman">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-secondary text-uppercase mb-1" style="font-size: 10px; letter-spacing: 0.3px;">Nama Alat</label>
+                        <input type="text" class="form-control bg-light" id="kembali_nama_alat" readonly style="font-size: 13px;">
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label fw-bold text-secondary text-uppercase mb-1" style="font-size: 10px; letter-spacing: 0.3px;">Kondisi Pengembalian</label>
+                        <select class="form-select" name="kondisi_kembali" required style="font-size: 13px;">
+                            <option value="baik">Baik (Normal)</option>
+                            <option value="rusak_ringan">Rusak Ringan</option>
+                            <option value="rusak_berat">Rusak Berat</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer py-3 px-4" style="border-top: 1px solid #f1f5f9; gap: 8px;">
+                    <button type="button" class="btn btn-light text-secondary" data-bs-dismiss="modal" style="font-size: 12px; padding: 7px 14px; border-radius: 6px; border: 1px solid #e2e8f0; font-weight: 600;">
+                        Batal
+                    </button>
+                    <button type="submit" name="kembalikan_alat" class="btn btn-success text-uppercase text-white" style="font-size: 12px; padding: 7px 16px; border-radius: 6px; font-weight: 700; letter-spacing: 0.3px;">
+                        Kembalikan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnKembaliTriggers = document.querySelectorAll('.btn-kembali-trigger');
+    btnKembaliTriggers.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const idPeminjaman = this.getAttribute('data-id');
+            const namaAlat = this.getAttribute('data-nama');
+            document.getElementById('kembali_id_peminjaman').value = idPeminjaman;
+            document.getElementById('kembali_nama_alat').value = namaAlat;
+        });
+    });
+});
+</script>
 </body>
 </html>

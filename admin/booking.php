@@ -31,13 +31,13 @@ if (isset($_POST['action_tambah'])) {
     $id_paket     = mysqli_real_escape_string($koneksi, $_POST['id_paket']);
     $keluhan      = mysqli_real_escape_string($koneksi, $_POST['keluhan']);
     
-    $sql_sp = "INSERT INTO tbl_booking (kode_booking, id_pelanggan, id_kendaraan, id_paket, id_stall, id_mekanik, tanggal_servis, jam_servis, keluhan, status, created_at) 
-               VALUES ('$kode_booking', '$id_pelanggan', '$id_kendaraan', '$id_paket', NULL, NULL, CURDATE(), CURTIME(), '$keluhan', 'menunggu', NOW())";
+    // Memanggil Stored Procedure sp_tambah_booking
+    $sql_sp = "CALL sp_tambah_booking('$kode_booking', '$id_pelanggan', '$id_kendaraan', '$id_paket', '$keluhan')";
     
     if (mysqli_query($koneksi, $sql_sp)) {
         echo "<script>alert('Sukses! Antrean masuk dengan status: Menunggu.'); window.location='booking.php';</script>";
     } else {
-        echo "<script>alert('Gagal: " . mysqli_error($koneksi) . "'); window.location='booking.php';</script>";
+        echo "<script>alert('Gagal: " . mysqli_real_escape_string($koneksi, mysqli_error($koneksi)) . "'); window.location='booking.php';</script>";
     }
 }
 
@@ -47,13 +47,13 @@ if (isset($_POST['action_konfirmasi'])) {
     $id_stall   = mysqli_real_escape_string($koneksi, $_POST['id_stall']);
     $id_mekanik = mysqli_real_escape_string($koneksi, $_POST['id_mekanik']);
     
-    $query_konf = mysqli_query($koneksi, "UPDATE tbl_booking SET id_stall='$id_stall', id_mekanik='$id_mekanik', status='terkonfirmasi' WHERE id_booking='$id_booking'");
+    // Memanggil Stored Procedure sp_penugasan_servis
+    $query_konf = mysqli_query($koneksi, "CALL sp_penugasan_servis('$id_booking', '$id_mekanik', '$id_stall')");
     
     if ($query_konf) {
-        mysqli_query($koneksi, "UPDATE tbl_stall SET status='terisi' WHERE id_stall='$id_stall'");
-        echo "<script>alert('Sukses! Status berubah menjadi Terkonfirmasi. Menunggu Mekanik memproses pengerjaan.'); window.location='booking.php';</script>";
+        echo "<script>alert('Sukses! Status berubah menjadi Terkonfirmasi. Pengerjaan telah dimulai untuk Mekanik.'); window.location='booking.php';</script>";
     } else {
-        echo "<script>alert('Gagal melakukan konfirmasi.'); window.location='booking.php';</script>";
+        echo "<script>alert('Gagal melakukan konfirmasi: " . mysqli_real_escape_string($koneksi, mysqli_error($koneksi)) . "'); window.location='booking.php';</script>";
     }
 }
 
@@ -77,6 +77,16 @@ function safe_text($value) {
 $kolom_mekanik = "nama"; 
 $check_col = mysqli_query($koneksi, "SHOW COLUMNS FROM tbl_mekanik LIKE 'nama_lengkap'");
 if ($check_col && mysqli_num_rows($check_col) > 0) { $kolom_mekanik = "nama_lengkap"; }
+
+// AMBIL DATA KENDARAAN UNTUK JAVASCRIPT FILTERING
+$query_kendaraan = "SELECT id_kendaraan, id_pelanggan, nomor_polisi, merk, tipe FROM tbl_kendaraan";
+$res_kendaraan = mysqli_query($koneksi, $query_kendaraan);
+$arr_kendaraan = [];
+if ($res_kendaraan) {
+    while ($rk = mysqli_fetch_assoc($res_kendaraan)) {
+        $arr_kendaraan[] = $rk;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -101,7 +111,7 @@ if ($check_col && mysqli_num_rows($check_col) > 0) { $kolom_mekanik = "nama_leng
         body { background-color: var(--bg-body); color: #334155; overflow-x: hidden; }
         .layout-wrapper { display: flex; min-height: 100vh; }
         
-        /* SIDEBAR COMPONENT (Sesuai Halaman Master Lainnya) */
+        /* SIDEBAR COMPONENT */
         .sidebar-panel { 
             width: 280px; background: var(--sidebar-bg); flex-shrink: 0; 
             display: flex; flex-direction: column; justify-content: space-between; 
@@ -163,8 +173,10 @@ if ($check_col && mysqli_num_rows($check_col) > 0) { $kolom_mekanik = "nama_leng
             <a href="stall.php" class="nav-link"><i class="bi bi-house-gear-fill"></i>Data Stall</a>
             
             <div class="section-header">OPERASIONAL</div>
+            <a href="pengadaan.php" class="nav-link"><i class="bi bi-cart-plus-fill"></i>Pengadaan Stok</a>
             <a href="booking.php" class="nav-link active"><i class="bi bi-calendar-check-fill"></i>Transaksi Booking</a>
             <a href="laporan.php" class="nav-link"><i class="bi bi-graph-up-arrow"></i>Laporan Pelayanan</a>
+            <a href="laporan_sparepart.php" class="nav-link"><i class="bi bi-box-seam"></i>Laporan Sparepart</a>
         </div>
         <div class="logout-box">
             <a href="../auth/logout.php" class="nav-link logout-btn" onclick="return confirm('Keluar dari sistem SIBEO?')"><i class="bi bi-power"></i>Log Out</a>
@@ -207,7 +219,7 @@ if ($check_col && mysqli_num_rows($check_col) > 0) { $kolom_mekanik = "nama_leng
                             SELECT b.*, p.nama_lengkap, pk.nama_paket, pk.harga AS harga_paket, 
                                    IFNULL(m.$kolom_mekanik, '-') AS nama_mekanik, 
                                    IFNULL(s.nomor_stall, '-') AS nomor_stall,
-                                   udf_hitung_total(pk.harga) AS total_akhir
+                                   udf_hitung_total(b.id_booking) AS total_akhir
                             FROM tbl_booking b
                             LEFT JOIN tbl_pelanggan p ON b.id_pelanggan = p.id_pelanggan
                             LEFT JOIN tbl_paket_layanan pk ON b.id_paket = pk.id_paket
@@ -296,16 +308,16 @@ if ($check_col && mysqli_num_rows($check_col) > 0) { $kolom_mekanik = "nama_leng
                                                     <div class="col-12">
                                                         <label class="form-label small fw-bold">Tunjuk Mekanik Lapangan</label>
                                                         <select name="id_mekanik" class="form-select" required>
-                                                            <option value="">-- Pilih Mekanik --</option>
-                                                            <?php 
-                                                            $m_res = mysqli_query($koneksi, "SELECT id_mekanik, $kolom_mekanik FROM tbl_mekanik");
-                                                            while($m = mysqli_fetch_assoc($m_res)) { echo "<option value='".$m['id_mekanik']."'>".$m[$kolom_mekanik]."</option>"; }
-                                                            ?>
+                                                             <option value="">-- Pilih Mekanik --</option>
+                                                             <?php 
+                                                             $m_res = mysqli_query($koneksi, "SELECT id_mekanik, $kolom_mekanik FROM tbl_mekanik WHERE id_mekanik NOT IN (SELECT id_mekanik FROM tbl_booking WHERE id_mekanik IS NOT NULL AND status IN ('terkonfirmasi', 'proses', 'dalam_proses')) AND id_mekanik NOT IN (SELECT id_mekanik FROM tbl_pengerjaan WHERE status != 'Selesai')");
+                                                             while($m = mysqli_fetch_assoc($m_res)) { echo "<option value='".$m['id_mekanik']."'>".$m[$kolom_mekanik]."</option>"; }
+                                                             ?>
                                                         </select>
                                                     </div>
                                                 </div>
                                                 <div class="modal-footer">
-                                                    <button type="submit" name="action_konfirmasi" class="btn btn-primary w-100 fw-bold" style="border-radius: 10px;">Kirim Tugas ke Mekanik</button>
+                                                    <button type="submit" name="action_confirmasi" class="btn btn-primary w-100 fw-bold" style="border-radius: 10px;">Kirim Tugas ke Mekanik</button>
                                                 </div>
                                             </form>
                                         </div>
@@ -339,7 +351,7 @@ if ($check_col && mysqli_num_rows($check_col) > 0) { $kolom_mekanik = "nama_leng
                     </div>
                     <div class="col-12">
                         <label class="form-label small fw-bold text-secondary">Pilih Pelanggan</label>
-                        <select name="id_pelanggan" class="form-select" required>
+                        <select id="id_pelanggan" name="id_pelanggan" class="form-select" onchange="filterKendaraan()" required>
                             <option value="">-- Pelanggan --</option>
                             <?php 
                             $res = mysqli_query($koneksi, "SELECT id_pelanggan, nama_lengkap FROM tbl_pelanggan");
@@ -348,8 +360,10 @@ if ($check_col && mysqli_num_rows($check_col) > 0) { $kolom_mekanik = "nama_leng
                         </select>
                     </div>
                     <div class="col-12">
-                        <label class="form-label small fw-bold text-secondary">ID / Index Kendaraan</label>
-                        <input type="number" name="id_kendaraan" class="form-control" value="1" required>
+                        <label class="form-label small fw-bold text-secondary">Pilih Kendaraan Pelanggan</label>
+                        <select id="id_kendaraan" name="id_kendaraan" class="form-select" required>
+                            <option value="">-- Pilih Pelanggan Dahulu --</option>
+                        </select>
                     </div>
                     <div class="col-12">
                         <label class="form-label small fw-bold text-secondary">Pilih Paket Layanan</label>
@@ -375,5 +389,35 @@ if ($check_col && mysqli_num_rows($check_col) > 0) { $kolom_mekanik = "nama_leng
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const dataKendaraan = <?php echo json_encode($arr_kendaraan); ?>;
+
+    function filterKendaraan() {
+        const idPelangganSelected = document.getElementById('id_pelanggan').value;
+        const selectKendaraan = document.getElementById('id_kendaraan');
+        
+        // Reset Dropdown Kendaraan ke default
+        selectKendaraan.innerHTML = '<option value="">-- Pilih Kendaraan --</option>';
+        
+        // Saring kendaraan berdasarkan id_pelanggan pemiliknya
+        const kendaraanTerfilter = dataKendaraan.filter(k => k.id_pelanggan == idPelangganSelected);
+        
+        if(kendaraanTerfilter.length > 0) {
+            kendaraanTerfilter.forEach(k => {
+                const opt = document.createElement('option');
+                opt.value = k.id_kendaraan;
+                opt.textContent = `${k.nomor_polisi} - ${k.merk} (${k.tipe})`;
+                selectKendaraan.appendChild(opt);
+            });
+        } else {
+            const opt = document.createElement('option');
+            opt.value = "";
+            opt.textContent = "⚠️ Pelanggan belum mendaftarkan kendaraan!";
+            opt.disabled = true;
+            selectKendaraan.appendChild(opt);
+        }
+    }
+</script>
 </body>
 </html>

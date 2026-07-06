@@ -7,13 +7,16 @@ $current_page = basename($_SERVER['PHP_SELF']);
 // =========================================================================
 // MENGAMBIL DATA SESSION PELANGGAN (Sesuaikan dengan variabel login Anda)
 // =========================================================================
-// Jika Anda menggunakan login, silakan aktifkan baris di bawah ini:
-// $id_pelanggan_login = $_SESSION['id_pelanggan'];
-// $nama_pelanggan_login = $_SESSION['nama_lengkap'];
-
-// Dummy data untuk pengetesan awal
-$id_pelanggan_login = 3; 
-$nama_pelanggan_login = "Pelanggan SIBEO"; 
+if (isset($_SESSION['id']) && $_SESSION['role'] === 'pelanggan') {
+    $id_pelanggan_login = $_SESSION['id'];
+    $nama_pelanggan_login = $_SESSION['nama_lengkap'] ?? 'Pelanggan SIBEO';
+} elseif (isset($_SESSION['id_pelanggan'])) {
+    $id_pelanggan_login = $_SESSION['id_pelanggan'];
+    $nama_pelanggan_login = $_SESSION['nama_lengkap'] ?? 'Pelanggan SIBEO';
+} else {
+    header("Location: ../auth/login.php");
+    exit();
+} 
 
 // =========================================================================
 // AGREGASI DATA STATISTIK DARI DATABASE
@@ -26,7 +29,7 @@ $total_servis = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) AS to
 
 // 3. Hitung Total Pengeluaran Servis menggunakan UDF
 $biaya_res = mysqli_query($koneksi, "
-    SELECT SUM(udf_hitung_total(pk.harga)) AS total_pengeluaran 
+    SELECT SUM(udf_hitung_total(b.id_booking)) AS total_pengeluaran 
     FROM tbl_booking b
     JOIN tbl_paket_layanan pk ON b.id_paket = pk.id_paket
     WHERE b.id_pelanggan = '$id_pelanggan_login' AND b.status = 'selesai'

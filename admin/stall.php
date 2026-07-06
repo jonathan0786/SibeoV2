@@ -158,8 +158,10 @@ function safe_text($value) {
             <a href="alat_kerja.php" class="nav-link <?= $current_page=='alat_kerja.php'?'active':'' ?>"><i class="bi bi-wrench-adjustable-circle-fill"></i>Alat Kerja</a>
             <a href="stall.php" class="nav-link <?= $current_page=='stall.php'?'active':'' ?>"><i class="bi bi-house-gear-fill"></i>Data Stall</a>
             <div class="section-header">OPERASIONAL</div>
+            <a href="pengadaan.php" class="nav-link <?= $current_page=='pengadaan.php'?'active':'' ?>"><i class="bi bi-cart-plus-fill"></i>Pengadaan Stok</a>
             <a href="booking.php" class="nav-link <?= $current_page=='booking.php'?'active':'' ?>"><i class="bi bi-calendar-check-fill"></i>Transaksi Booking</a>
             <a href="laporan.php" class="nav-link <?= $current_page=='laporan.php'?'active':'' ?>"><i class="bi bi-graph-up-arrow"></i>Laporan Pelayanan</a>
+            <a href="laporan_sparepart.php" class="nav-link <?= $current_page=='laporan_sparepart.php'?'active':'' ?>"><i class="bi bi-box-seam"></i>Laporan Sparepart</a>
         </div>
 
         <div class="logout-box">
@@ -213,7 +215,7 @@ function safe_text($value) {
                                         $status = strtolower($data['status']);
                                         if($status == 'tersedia') {
                                             echo '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 text-uppercase small fw-bold"><i class="bi bi-check-circle-fill me-1"></i>Tersedia</span>';
-                                        } elseif($status == 'terisi') {
+                                        } elseif($status == 'terpakai' || $status == 'terisi') {
                                             echo '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 text-uppercase small fw-bold"><i class="bi bi-cone-striped me-1"></i>Sedang Terisi</span>';
                                         } else {
                                             echo '<span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 text-uppercase small fw-bold"><i class="bi bi-tools me-1"></i>Maintenance</span>';

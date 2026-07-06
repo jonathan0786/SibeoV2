@@ -16,30 +16,27 @@ if (isset($_POST['update_pengerjaan'])) {
     $status_baru = mysqli_real_escape_string($koneksi, $_POST['status_pengerjaan']);
     $catatan = mysqli_real_escape_string($koneksi, $_POST['catatan_mekanik']);
     
-    // Jika status diubah menjadi Selesai, set waktu_selesai ke jam sekarang
+    // Jika status diubah menjadi Selesai, panggil stored procedure sp_selesaikan_servis
     if ($status_baru == 'Selesai') {
-        $waktu_sekarang = date('Y-m-d H:i:s');
-        $query_update = "UPDATE tbl_pengerjaan SET 
-                            status_pengerjaan = '$status_baru', 
-                            catatan_mekanik = '$catatan', 
-                            waktu_selesai = '$waktu_sekarang' 
-                         WHERE id_pengerjaan = '$id_pengerjaan' AND id_mekanik = '$id_mekanik'";
+        // Simpan catatan terlebih dahulu
+        mysqli_query($koneksi, "UPDATE tbl_pengerjaan SET catatan_pengerjaan = '$catatan' WHERE id_pengerjaan = '$id_pengerjaan'");
+        $query_update = "CALL sp_selesaikan_servis('$id_pengerjaan')";
     } else {
-        // Jika status diubah ke Proses/Sedang Dikerjakan dan waktu_mulai masih kosong, isi waktu_mulai
+        // Cek jika waktu mulai masih kosong
         $query_cek = mysqli_query($koneksi, "SELECT waktu_mulai FROM tbl_pengerjaan WHERE id_pengerjaan = '$id_pengerjaan'");
         $data_cek = mysqli_fetch_assoc($query_cek);
         
-        if (empty($data_cek['waktu_mulai']) || $data_cek['waktu_mulai'] == '0000-00-00 00:00:00') {
+        if (empty($data_cek['waktu_mulai']) || $data_cek['waktu_mulai'] == '0000-00-00 00:00:00' || $data_cek['waktu_mulai'] == NULL) {
             $waktu_mulai = date('Y-m-d H:i:s');
             $query_update = "UPDATE tbl_pengerjaan SET 
-                                status_pengerjaan = '$status_baru', 
-                                catatan_mekanik = '$catatan', 
+                                status = '$status_baru', 
+                                catatan_pengerjaan = '$catatan', 
                                 waktu_mulai = '$waktu_mulai' 
                              WHERE id_pengerjaan = '$id_pengerjaan' AND id_mekanik = '$id_mekanik'";
         } else {
             $query_update = "UPDATE tbl_pengerjaan SET 
-                                status_pengerjaan = '$status_baru', 
-                                catatan_mekanik = '$catatan' 
+                                status = '$status_baru', 
+                                catatan_pengerjaan = '$catatan' 
                              WHERE id_pengerjaan = '$id_pengerjaan' AND id_mekanik = '$id_mekanik'";
         }
     }
@@ -47,7 +44,7 @@ if (isset($_POST['update_pengerjaan'])) {
     if (mysqli_query($koneksi, $query_update)) {
         echo "<script>alert('Status pengerjaan berhasil diperbarui!'); window.location='pengerjaan.php';</script>";
     } else {
-        echo "<script>alert('Gagal memperbarui status!');</script>";
+        echo "<script>alert('Gagal memperbarui status: " . mysqli_error($koneksi) . "');</script>";
     }
 }
 ?>
@@ -233,10 +230,10 @@ if (isset($_POST['update_pengerjaan'])) {
                                 echo "<tr><td colspan='6' class='text-center text-muted py-4 small'>Belum ada daftar pengerjaan yang ditugaskan.</td></tr>";
                             } else {
                                 while ($r = mysqli_fetch_assoc($query_pengerjaan)) {
-                                    $status = $r['status_pengerjaan'];
+                                    $status = $r['status'];
                                     $badge = "bg-warning text-warning";
                                     if ($status == "Selesai") $badge = "bg-success text-success";
-                                    elseif ($status == "Sedang Dikerjakan" || $status == "Proses") $badge = "bg-primary text-primary";
+                                    elseif ($status == "Sedang Dikerjakan" || $status == "Proses" || $status == "dimulai") $badge = "bg-primary text-primary";
                                     ?>
                                     <tr>
                                         <td class="fw-bold text-primary"><?= $r['kode_booking']; ?></td>
@@ -253,9 +250,9 @@ if (isset($_POST['update_pengerjaan'])) {
                                             <div class="mt-1"><i class="fa-solid fa-flag-checkered text-muted me-1 small"></i> <?= (!empty($r['waktu_selesai']) && $r['waktu_selesai'] != '0000-00-00 00:00:00') ? $r['waktu_selesai'] : '-'; ?></div>
                                         </td>
                                         <td>
-                                            <span class="badge bg-opacity-10 <?= $badge; ?> px-2.5 py-1.5 rounded" style="font-size: 12px; font-weight: 600;"><?= $status; ?></span>
-                                            <?php if(!empty($r['catatan_mekanik'])): ?>
-                                                <br><small class="text-secondary" style="font-size: 11px;"><i>Note: <?= htmlspecialchars($r['catatan_mekanik']); ?></i></small>
+                                            <span class="badge bg-opacity-10 <?= $badge; ?> px-2.5 py-1.5 rounded text-capitalize" style="font-size: 12px; font-weight: 600;"><?= $status; ?></span>
+                                            <?php if(!empty($r['catatan_pengerjaan'])): ?>
+                                                <br><small class="text-secondary" style="font-size: 11px;"><i>Note: <?= htmlspecialchars($r['catatan_pengerjaan']); ?></i></small>
                                             <?php endif; ?>
                                         </td>
                                         <td class="text-center">
@@ -279,15 +276,15 @@ if (isset($_POST['update_pengerjaan'])) {
                                                         <div class="mb-3">
                                                             <label class="form-label fw-semibold small text-muted">STATUS PENGERJAAN</label>
                                                             <select class="form-select" name="status_pengerjaan" required>
-                                                                <option value="Pending" <?= ($status == 'Pending') ? 'selected' : ''; ?>>Pending (Belum Dikerjakan)</option>
+                                                                <option value="dimulai" <?= ($status == 'dimulai' || $status == 'Pending') ? 'selected' : ''; ?>>Belum Dikerjakan (Dimulai)</option>
                                                                 <option value="Sedang Dikerjakan" <?= ($status == 'Sedang Dikerjakan' || $status == 'Proses') ? 'selected' : ''; ?>>Sedang Dikerjakan</option>
                                                                 <option value="Selesai" <?= ($status == 'Selesai') ? 'selected' : ''; ?>>Selesai</option>
                                                             </select>
                                                         </div>
-
+                                                        
                                                         <div class="mb-2">
-                                                            <label class="form-label fw-semibold small text-muted">CATATAN MEKANIK</label>
-                                                            <textarea class="form-control" name="catatan_mekanik" rows="3" placeholder="Contoh: Oli sudah diganti, rem depan dibersihkan..."><?= htmlspecialchars($r['catatan_mekanik']); ?></textarea>
+                                                            <label class="form-label fw-semibold small text-muted">CATATAN PERBAIKAN</label>
+                                                            <textarea class="form-control" name="catatan_mekanik" rows="3" placeholder="Contoh: Oli sudah diganti, rem depan dibersihkan..."><?= htmlspecialchars($r['catatan_pengerjaan']); ?></textarea>
                                                         </div>
                                                     </div>
                                                     <div class="modal-footer">

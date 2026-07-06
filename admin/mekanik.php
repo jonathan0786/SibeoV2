@@ -44,12 +44,24 @@ if (isset($_POST['action_edit'])) {
     }
 }
 
-// 3. PROSES HAPUS DATA MEKANIK
+// 3. PROSES HAPUS DATA MEKANIK (DENGAN VALIDASI FOREIGN KEY)
 if (isset($_GET['hapus'])) {
     $id_hapus = mysqli_real_escape_string($koneksi, $_GET['hapus']);
-    $query_del = mysqli_query($koneksi, "DELETE FROM tbl_mekanik WHERE id_mekanik='$id_hapus'");
-    if ($query_del) {
-        echo "<script>alert('Data mekanik berhasil dihapus!'); window.location='mekanik.php';</script>";
+    
+    // Validasi awal: Cek apakah id_mekanik ini sudah dipakai di tabel pengerjaan
+    $cek_relasi = mysqli_query($koneksi, "SELECT id_pengerjaan FROM tbl_pengerjaan WHERE id_mekanik='$id_hapus' LIMIT 1");
+    
+    if (mysqli_num_rows($cek_relasi) > 0) {
+        // Jika mekanik memiliki relasi tugas, gagalkan proses hapus secara halus
+        echo "<script>alert('Gagal Menghapus! Mekanik ini tidak bisa dihapus karena sedang atau pernah memiliki riwayat tugas pengerjaan.'); window.location='mekanik.php';</script>";
+    } else {
+        // Jika aman dan tidak ada relasi, barulah eksekusi hapus
+        $query_del = mysqli_query($koneksi, "DELETE FROM tbl_mekanik WHERE id_mekanik='$id_hapus'");
+        if ($query_del) {
+            echo "<script>alert('Data mekanik berhasil dihapus!'); window.location='mekanik.php';</script>";
+        } else {
+            echo "<script>alert('Gagal menghapus data mekanik.'); window.location='mekanik.php';</script>";
+        }
     }
 }
 
@@ -150,8 +162,10 @@ function safe_text($value) {
             <a href="alat_kerja.php" class="nav-link <?= $current_page=='alat_kerja.php'?'active':'' ?>"><i class="bi bi-wrench-adjustable-circle-fill"></i>Alat Kerja</a>
             <a href="stall.php" class="nav-link <?= $current_page=='stall.php'?'active':'' ?>"><i class="bi bi-house-gear-fill"></i>Data Stall</a>
             <div class="section-header">OPERASIONAL</div>
+            <a href="pengadaan.php" class="nav-link <?= $current_page=='pengadaan.php'?'active':'' ?>"><i class="bi bi-cart-plus-fill"></i>Pengadaan Stok</a>
             <a href="booking.php" class="nav-link <?= $current_page=='booking.php'?'active':'' ?>"><i class="bi bi-calendar-check-fill"></i>Transaksi Booking</a>
             <a href="laporan.php" class="nav-link <?= $current_page=='laporan.php'?'active':'' ?>"><i class="bi bi-graph-up-arrow"></i>Laporan Pelayanan</a>
+            <a href="laporan_sparepart.php" class="nav-link <?= $current_page=='laporan_sparepart.php'?'active':'' ?>"><i class="bi bi-box-seam"></i>Laporan Sparepart</a>
         </div>
 
         <div class="logout-box">

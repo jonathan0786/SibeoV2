@@ -12,10 +12,15 @@ $total_suku_cadang = mysqli_num_rows(mysqli_query($koneksi, "SELECT id_suku_cada
 $total_mekanik     = mysqli_num_rows(mysqli_query($koneksi, "SELECT id_mekanik FROM tbl_mekanik"));
 $total_alat        = mysqli_num_rows(mysqli_query($koneksi, "SELECT id_alat FROM tbl_alat_kerja"));
 
+// total biaya pengeluaran 
+$query_modal = mysqli_query($koneksi, "SELECT SUM(total_biaya) as pengeluaran FROM tbl_pengadaan WHERE MONTH(tanggal_pengadaan) = MONTH(CURRENT_DATE())");
+$data_modal = mysqli_fetch_assoc($query_modal);
+$pengeluaran_bulan_ini = $data_modal['pengeluaran'] ? $data_modal['pengeluaran'] : 0;
+
 // Menghitung status ketersediaan Stall
 $total_stall       = mysqli_num_rows(mysqli_query($koneksi, "SELECT id_stall FROM tbl_stall"));
 $stall_tersedia    = mysqli_num_rows(mysqli_query($koneksi, "SELECT id_stall FROM tbl_stall WHERE LOWER(status)='tersedia'"));
-$stall_terisi      = mysqli_num_rows(mysqli_query($koneksi, "SELECT id_stall FROM tbl_stall WHERE LOWER(status)='terisi'"));
+$stall_terisi      = mysqli_num_rows(mysqli_query($koneksi, "SELECT id_stall FROM tbl_stall WHERE LOWER(status) IN ('terisi', 'terpakai')"));
 $stall_maintenance = mysqli_num_rows(mysqli_query($koneksi, "SELECT id_stall FROM tbl_stall WHERE LOWER(status)='maintenance'"));
 
 // Mengambil 5 aktivitas pendaftaran pelanggan terbaru sebagai log sistem singkat
@@ -119,7 +124,7 @@ function safe_text($value) {
             <div class="section-header">UTAMA</div>
             <a href="dashboard.php" class="nav-link <?= $current_page=='dashboard.php'?'active':'' ?>"><i class="bi bi-speedometer2"></i>Dashboard</a>
 
-            <div class="section-header">6 DATA MASTER</div>
+            <div class="section-header">DATA MASTER</div>
             <a href="pelanggan.php" class="nav-link <?= $current_page=='pelanggan.php'?'active':'' ?>"><i class="bi bi-people-fill"></i>Pelanggan</a>
             <a href="suku_cadang.php" class="nav-link <?= $current_page=='suku_cadang.php'?'active':'' ?>"><i class="bi bi-box-seam-fill"></i>Suku Cadang</a>
             <a href="mekanik.php" class="nav-link <?= $current_page=='mekanik.php'?'active':'' ?>"><i class="bi bi-tools"></i>Mekanik</a>
@@ -128,8 +133,10 @@ function safe_text($value) {
             <a href="stall.php" class="nav-link <?= $current_page=='stall.php'?'active':'' ?>"><i class="bi bi-house-gear-fill"></i>Data Stall</a>
 
             <div class="section-header">OPERASIONAL</div>
+            <a href="pengadaan.php" class="nav-link <?= $current_page=='pengadaan.php'?'active':'' ?>"><i class="bi bi-cart-plus-fill"></i>Pengadaan Stok</a>
             <a href="booking.php" class="nav-link <?= $current_page=='booking.php'?'active':'' ?>"><i class="bi bi-calendar-check-fill"></i>Transaksi Booking</a>
             <a href="laporan.php" class="nav-link <?= $current_page=='laporan.php'?'active':'' ?>"><i class="bi bi-graph-up-arrow"></i>Laporan Pelayanan</a>
+            <a href="laporan_sparepart.php" class="nav-link <?= $current_page=='laporan_sparepart.php'?'active':'' ?>"><i class="bi bi-box-seam"></i>Laporan Sparepart</a>
         </div>
 
         <div class="logout-box">
@@ -191,6 +198,18 @@ function safe_text($value) {
                     <div class="widget-icon-box icon-teal">
                         <i class="bi bi-wrench-adjustable-circle-fill"></i>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-4">
+            <div class="widget-stat-card border-danger border-opacity-25">
+                <div>
+                    <p class="widget-info-title text-danger">Modal/Belanja (Bulan Ini)</p>
+                    <h3 class="widget-info-value fs-4 text-danger">Rp <?= number_format($pengeluaran_bulan_ini, 0, ',', '.'); ?></h3>
+                </div>
+                <div class="widget-icon-box bg-danger-subtle text-danger">
+                    <i class="bi bi-cart-check-fill"></i>
                 </div>
             </div>
         </div>

@@ -8,11 +8,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
 // =========================================================================
 // MENGAMBIL DATA SESSION PELANGGAN
 // =========================================================================
-if (isset($_SESSION['id_pelanggan'])) {
+if (isset($_SESSION['id']) && $_SESSION['role'] === 'pelanggan') {
+    $id_pelanggan_login = $_SESSION['id'];
+} elseif (isset($_SESSION['id_pelanggan'])) {
     $id_pelanggan_login = $_SESSION['id_pelanggan'];
 } else {
-    // Sesuai gambar database Anda, pelanggan ID 2 memiliki 2 kendaraan (Motor & Mobil)
-    $id_pelanggan_login = 2; 
+    header("Location: ../auth/login.php");
+    exit();
 }
 
 // =========================================================================

@@ -55,7 +55,11 @@ if (isset($_POST['konfirmasi_penugasan'])) {
     $stmt = mysqli_prepare($koneksi, "
         SELECT id_mekanik
         FROM tbl_mekanik
-        WHERE id_mekanik = ?
+        WHERE id_mekanik = ? AND id_mekanik NOT IN (
+            SELECT id_mekanik FROM tbl_booking WHERE id_mekanik IS NOT NULL AND status IN ('terkonfirmasi', 'proses', 'dalam_proses')
+        ) AND id_mekanik NOT IN (
+            SELECT id_mekanik FROM tbl_pengerjaan WHERE status != 'Selesai'
+        )
         LIMIT 1
     ");
     mysqli_stmt_bind_param($stmt, 'i', $id_mekanik);
