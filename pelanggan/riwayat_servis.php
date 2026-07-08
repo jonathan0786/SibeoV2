@@ -16,78 +16,78 @@ $id_pelanggan = $_SESSION['id'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Riwayat Servis - SIBEO</title>
+    <title>Dashboard Pelanggan - SIBEO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
     <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f1f5f9;
-            color: #1e293b;
+        :root {
+            --bg-body: #f4f6f9;
+            --sidebar-bg: #1e293b;
+            --sidebar-color: #94a3b8;
+            --sidebar-active: #3b82f6;
+            --text-dark: #0f172a;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
         }
-        .sidebar {
-            background: #0f172a;
-            height: 100vh;
-            position: fixed;
-            top: 0; left: 0; bottom: 0;
-            z-index: 999;
-            box-shadow: 4px 0 24px rgba(15, 23, 42, 0.15);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        .sidebar-brand-wrapper { padding: 30px 24px 20px 24px; }
-        .sidebar-brand {
-            font-size: 24px; font-weight: 800; letter-spacing: 1.5px;
-            background: linear-gradient(45deg, #38bdf8, #3b82f6);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .sidebar-subtitle { font-size: 10px; font-weight: 600; letter-spacing: 1px; color: #475569; margin-top: 4px; }
-        .nav-section-title { font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 1px; padding: 20px 24px 10px 24px; }
-        .sidebar .nav-link { color: #94a3b8; font-size: 14px; font-weight: 500; padding: 14px 24px; display: flex; align-items: center; transition: all 0.2s ease; border-left: 4px solid transparent; }
-        .sidebar .nav-link i { font-size: 16px; width: 28px; }
-        .sidebar .nav-link:hover { color: #38bdf8; background: rgba(56, 189, 248, 0.04); }
-        .sidebar .nav-link.active { background: rgba(59, 130, 246, 0.08); color: #3b82f6; font-weight: 600; border-left-color: #3b82f6; }
+        * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+        body { background-color: var(--bg-body); color: #334155; overflow-x: hidden; }
+        .layout-wrapper { display: flex; min-height: 100vh; }
         
-        .main-wrapper { margin-left: 16.666667%; padding: 40px; }
+        /* SIDEBAR COMPONENT */
+        .sidebar-panel { 
+            width: 280px; background: var(--sidebar-bg); flex-shrink: 0; 
+            display: flex; flex-direction: column; justify-content: space-between; 
+            padding: 30px 20px; box-shadow: 10px 0 30px rgba(15, 23, 42, 0.05);
+            position: sticky; top: 0; height: 100vh;
+        }
+        .brand-section { padding: 0 12px 25px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .brand-title { font-size: 24px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 10px; }
+        .brand-title span { color: var(--sidebar-active); }
+        .brand-subtitle { font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
+
+        .menu-container { overflow-y: auto; flex-grow: 1; margin-top: 20px; }
+        .menu-container::-webkit-scrollbar { width: 4px; }
+        .menu-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+        .section-header { font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; padding: 20px 12px 8px 12px; }
+        .sidebar-panel .nav-link { color: var(--sidebar-color); font-size: 14px; font-weight: 500; padding: 12px 16px; display: flex; align-items: center; text-decoration: none; border-radius: 12px; margin-bottom: 4px; transition: all 0.2s ease; }
+        .sidebar-panel .nav-link i { width: 24px; font-size: 16px; margin-right: 12px; text-align: center; }
+        .sidebar-panel .nav-link:hover { color: #ffffff; background: rgba(255, 255, 255, 0.04); }
+        .sidebar-panel .nav-link.active { background: var(--sidebar-active); color: #ffffff; font-weight: 600; box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.35); }
+
+        .logout-box { padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); }
+        .logout-btn { color: #f87171 !important; font-weight: 600 !important; background: rgba(239, 68, 68, 0.05); border-radius: 12px; }
+        .logout-btn:hover { background: #ef4444 !important; color: #ffffff !important; }
         
-        /* Premium Table Component */
-        .table-premium { background: white; border-radius: 24px; box-shadow: 0 4px 18px rgba(148, 163, 184, 0.08); padding: 30px; }
-        .table-premium thead th { background-color: #f8fafc; color: #64748b; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 16px 20px; border-bottom: none; }
-        .table-premium tbody td { padding: 18px 20px; border-bottom: 1px solid #f1f5f9; color: #475569; font-size: 14px; }
+        /* MAIN CANVAS SCREEN */
+        .main-canvas { flex-grow: 1; padding: 40px 50px; max-width: calc(100% - 280px); }
+        
+        /* STATISTIK CARD */
+        .stat-card { background: #ffffff; border-radius: 18px; border: 1px solid #e2e8f0; padding: 24px; box-shadow: var(--card-shadow); display: flex; align-items: center; justify-content: space-between; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .stat-value { font-size: 24px; font-weight: 800; color: var(--text-dark); margin: 4px 0 0 0; }
+        .stat-label { font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin: 0; }
+
+        /* HERO CARD WELCOME */
+        .welcome-hero { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); border-radius: 20px; padding: 35px; color: #ffffff; position: relative; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.2); }
+        .welcome-hero::after { content: ''; position: absolute; width: 300px; height: 300px; background: rgba(255, 255, 255, 0.08); border-radius: 50%; right: -50px; top: -50px; }
+        
+        /* PREMIUM DATA TABLE */
+        .data-card-premium { background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: var(--card-shadow); overflow: hidden; }
+        .data-card-header { padding: 24px; background: #ffffff; border-bottom: 1px solid #f1f5f9; }
+        .data-card-title { font-size: 16px; font-weight: 700; color: var(--text-dark); margin: 0; }
+        .table-premium thead th { background: #f8fafc; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 16px 20px; border-bottom: 1px solid #e2e8f0; }
+        .table-premium tbody td { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #334155; }
     </style>
 </head>
 <body>
 
-<div class="container-fluid p-0">
-    <div class="row g-0">
-        
-        <div class="col-md-3 col-lg-2 sidebar">
-            <div>
-                <div class="sidebar-brand-wrapper text-start ps-4">
-                    <div class="sidebar-brand">SIBEO</div>
-                    <div class="sidebar-subtitle">CUSTOMER SYSTEM</div>
-                </div>
-                
-                <div class="nav-section-title">MENU UTAMA</div>
-                <div class="nav flex-column">
-                    <a href="dashboard.php" class="nav-link"><i class="fa-solid fa-chart-simple me-3"></i>Dashboard</a>
-                    <a href="booking.php" class="nav-link"><i class="fa-solid fa-calendar-check me-3"></i>Booking Servis</a>
-                    <a href="kendaraan.php" class="nav-link"><i class="fa-solid fa-car me-3"></i>Kendaraan Saya</a>
-                    <a href="riwayat_servis.php" class="nav-link active"><i class="fa-solid fa-clock-rotate-left me-3"></i>Riwayat Servis</a>
-                </div>
-            </div>
-            
-            <div class="mb-4 border-top border-secondary border-opacity-10 pt-2">
-                <div class="nav flex-column">
-                    <a href="../auth/logout.php" class="nav-link text-danger" onclick="return confirm('Keluar dari sistem pelanggan?')"><i class="fa-solid fa-sign-out-alt me-3"></i>Keluar</a>
-                </div>
-            </div>
-        </div>
 
-        <div class="col-md-9 col-lg-10 main-wrapper">
+<div class="layout-wrapper">
+    <?php include '../includes/sidebar.php'; ?>
+
+    <div class="main-canvas">
             
             <div class="mb-4">
                 <h4 class="fw-bold m-0" style="color: #0f172a;">Log Aktivitas & Riwayat Servis</h4>

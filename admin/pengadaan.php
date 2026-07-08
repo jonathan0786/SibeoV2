@@ -122,35 +122,7 @@ function safe_text($value) {
 <body>
 
 <div class="layout-wrapper">
-    <div class="sidebar-panel">
-        <div class="brand-section">
-            <div class="brand-title"><i class="bi bi-lightning-charge-fill"></i>SIBEO<span>.</span></div>
-            <div class="brand-subtitle">WORKSHOP PANEL v2</div>
-        </div>
-
-        <div class="menu-container">
-            <div class="section-header">UTAMA</div>
-            <a href="dashboard.php" class="nav-link"><i class="bi bi-speedometer2"></i>Dashboard</a>
-
-            <div class="section-header">Data Master</div>
-            <a href="pelanggan.php" class="nav-link"><i class="bi bi-people-fill"></i>Pelanggan</a>
-            <a href="suku_cadang.php" class="nav-link"><i class="bi bi-box-seam-fill"></i>Suku Cadang</a>
-            <a href="mekanik.php" class="nav-link"><i class="bi bi-tools"></i>Mekanik</a>
-            <a href="paket_layanan.php" class="nav-link"><i class="bi bi-tags-fill"></i>Paket Layanan</a>
-            <a href="alat_kerja.php" class="nav-link"><i class="bi bi-wrench-adjustable-circle-fill"></i>Alat Kerja</a>
-            <a href="stall.php" class="nav-link"><i class="bi bi-house-gear-fill"></i>Data Stall</a>
-            
-            <div class="section-header">OPERASIONAL</div>
-            <a href="pengadaan.php" class="nav-link active"><i class="bi bi-cart-plus-fill"></i>Pengadaan Stok</a>
-            <a href="booking.php" class="nav-link"><i class="bi bi-calendar-check-fill"></i>Transaksi Booking</a>
-            <a href="laporan.php" class="nav-link"><i class="bi bi-graph-up-arrow"></i>Laporan Pelayanan</a>
-            <a href="laporan_sparepart.php" class="nav-link"><i class="bi bi-box-seam"></i>Laporan Sparepart</a>
-        </div>
-
-        <div class="logout-box">
-            <a href="../auth/logout.php" class="nav-link logout-btn"><i class="bi bi-power"></i>Log Out</a>
-        </div>
-    </div>
+    <?php include '../includes/sidebar.php'; ?>
 
     <div class="main-canvas">
         <div class="d-flex justify-content-between align-items-center mb-4">

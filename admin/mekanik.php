@@ -144,36 +144,7 @@ function safe_text($value) {
 <body>
 
 <div class="layout-wrapper">
-    <div class="sidebar-panel">
-        <div class="brand-section">
-            <div class="brand-title"><i class="bi bi-lightning-charge-fill"></i>SIBEO<span>.</span></div>
-            <div class="brand-subtitle">WORKSHOP PANEL v2</div>
-        </div>
-
-        <div class="menu-container">
-            <div class="section-header">UTAMA</div>
-            <a href="dashboard.php" class="nav-link <?= $current_page=='dashboard.php'?'active':'' ?>"><i class="bi bi-speedometer2"></i>Dashboard</a>
-
-            <div class="section-header">Data Master</div>
-            <a href="pelanggan.php" class="nav-link <?= $current_page=='pelanggan.php'?'active':'' ?>"><i class="bi bi-people-fill"></i>Pelanggan</a>
-            <a href="suku_cadang.php" class="nav-link <?= $current_page=='suku_cadang.php'?'active':'' ?>"><i class="bi bi-box-seam-fill"></i>Suku Cadang</a>
-            <a href="mekanik.php" class="nav-link <?= $current_page=='mekanik.php'?'active':'' ?>"><i class="bi bi-tools"></i>Mekanik</a>
-            <a href="paket_layanan.php" class="nav-link <?= $current_page=='paket_layanan.php'?'active':'' ?>"><i class="bi bi-tags-fill"></i>Paket Layanan</a>
-            <a href="alat_kerja.php" class="nav-link <?= $current_page=='alat_kerja.php'?'active':'' ?>"><i class="bi bi-wrench-adjustable-circle-fill"></i>Alat Kerja</a>
-            <a href="stall.php" class="nav-link <?= $current_page=='stall.php'?'active':'' ?>"><i class="bi bi-house-gear-fill"></i>Data Stall</a>
-            <div class="section-header">OPERASIONAL</div>
-            <a href="pengadaan.php" class="nav-link <?= $current_page=='pengadaan.php'?'active':'' ?>"><i class="bi bi-cart-plus-fill"></i>Pengadaan Stok</a>
-            <a href="booking.php" class="nav-link <?= $current_page=='booking.php'?'active':'' ?>"><i class="bi bi-calendar-check-fill"></i>Transaksi Booking</a>
-            <a href="laporan.php" class="nav-link <?= $current_page=='laporan.php'?'active':'' ?>"><i class="bi bi-graph-up-arrow"></i>Laporan Pelayanan</a>
-            <a href="laporan_sparepart.php" class="nav-link <?= $current_page=='laporan_sparepart.php'?'active':'' ?>"><i class="bi bi-box-seam"></i>Laporan Sparepart</a>
-        </div>
-
-        <div class="logout-box">
-            <a href="../auth/logout.php" class="nav-link logout-btn" onclick="return confirm('Keluar dari aplikasi SIBEO?')">
-                <i class="bi bi-power"></i>Log Out
-            </a>
-        </div>
-    </div>
+    <?php include '../includes/sidebar.php'; ?>
 
     <div class="main-canvas">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -289,8 +260,10 @@ function safe_text($value) {
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-secondary">Shift Kerja</label>
                         <select name="shift" class="form-select" required>
-                            <option value="pagi">Pagi</option>
-                            <option value="siang">Siang</option>
+                            <option value="" disabled selected>-- Pilih Shift --</option>
+                            <option value="pagi" <?= ($data['shift'] ?? '') == 'pagi' ? 'selected' : '' ?>>Pagi</option>
+                            <option value="siang" <?= ($data['shift'] ?? '') == 'siang' ? 'selected' : '' ?>>Siang</option>
+                            <option value="malam" <?= ($data['shift'] ?? '') == 'malam' ? 'selected' : '' ?>>Malam</option>
                         </select>
                     </div>
                     <div class="mb-3">

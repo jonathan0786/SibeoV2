@@ -11,7 +11,7 @@ if ($_SESSION['role'] === 'admin') {
     header("Location: admin/dashboard.php");
     exit();
 } elseif ($_SESSION['role'] === 'mekanik') {
-    header("Location: transaksi/pengerjaan.php"); // Langsung diarahkan ke modul tugas mekanik
+    header("Location: mekanik/dashboard.php"); // Langsung diarahkan ke modul tugas mekanik
     exit();
 } elseif ($_SESSION['role'] === 'pelanggan') {
     // Jika nanti ada fitur dashboard khusus pelanggan, arahkan ke sana

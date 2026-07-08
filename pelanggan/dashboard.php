@@ -110,22 +110,7 @@ $total_pengeluaran = $data_biaya['total_pengeluaran'] ?? 0;
 <body>
 
 <div class="layout-wrapper">
-    <div class="sidebar-panel">
-        <div class="brand-section">
-            <div class="brand-title"><i class="bi bi-lightning-charge-fill"></i>SIBEO<span>.</span></div>
-            <div class="brand-subtitle">PORTAL PELANGGAN</div>
-        </div>
-        <div class="menu-container">
-            <div class="section-header">MENU UTAMA</div>
-            <a href="dashboard.php" class="nav-link active"><i class="bi bi-speedometer2"></i>1. Dashboard</a>
-            <a href="booking.php" class="nav-link"><i class="bi bi-calendar-plus-fill"></i>2. Booking Servis</a>
-            <a href="kendaraan.php" class="nav-link"><i class="bi bi-car-front-fill"></i>3. Data Kendaraan</a>
-            <a href="riwayat.php" class="nav-link"><i class="bi bi-clock-history"></i>4. Riwayat & Nota</a>
-        </div>
-        <div class="logout-box">
-            <a href="../auth/logout.php" class="nav-link logout-btn" onclick="return confirm('Keluar dari portal SIBEO?')"><i class="bi bi-power"></i>Log Out</a>
-        </div>
-    </div>
+    <?php include '../includes/sidebar.php'; ?>
 
     <div class="main-canvas">
         <div class="mb-4">

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 06, 2026 at 08:05 AM
+-- Generation Time: Jul 07, 2026 at 03:01 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -25,141 +25,101 @@ DELIMITER $$
 --
 -- Procedures
 --
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_penugasan_servis` (IN `in_id_booking` INT, IN `in_id_mekanik` INT, IN `in_id_stall` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_penugasan_servis` (IN `p_id_booking` INT, IN `p_id_mekanik` INT, IN `p_id_stall` INT)   BEGIN
     DECLARE v_status_stall VARCHAR(20);
+    DECLARE v_shift_mekanik VARCHAR(20);
     
-        IF NOT EXISTS (SELECT 1 FROM tbl_booking WHERE id_booking = in_id_booking) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Booking tidak ditemukan!';
-    END IF;
+    -- Ambil status stall saat ini
+    SELECT status INTO v_status_stall FROM tbl_stall WHERE id_stall = p_id_stall;
     
-        IF NOT EXISTS (SELECT 1 FROM tbl_mekanik WHERE id_mekanik = in_id_mekanik) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Mekanik tidak ditemukan!';
-    END IF;
-    
-        SELECT status INTO v_status_stall FROM tbl_stall WHERE id_stall = in_id_stall;
-    IF v_status_stall IS NULL THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Stall tidak ditemukan!';
-    ELSEIF LOWER(v_status_stall) != 'tersedia' THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Stall sedang digunakan atau sedang maintenance!';
-    END IF;
-    
+    -- Validasi Stall Tersedia (BR-04)
+    IF v_status_stall <> 'tersedia' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Stall tidak tersedia atau sedang digunakan!';
+    ELSE
+        -- Update booking dengan stall, mekanik dan ubah status ke 'terkonfirmasi'
         UPDATE tbl_booking 
-    SET id_mekanik = in_id_mekanik, id_stall = in_id_stall, status = 'terkonfirmasi'
-    WHERE id_booking = in_id_booking;
-    
+        SET id_stall = p_id_stall, 
+            id_mekanik = p_id_mekanik, 
+            status = 'terkonfirmasi' 
+        WHERE id_booking = p_id_booking;
+        
+        -- Buat entri pengerjaan baru
         INSERT INTO tbl_pengerjaan (id_booking, id_mekanik, status, waktu_mulai)
-    VALUES (in_id_booking, in_id_mekanik, 'dimulai', NOW());
+        VALUES (p_id_booking, p_id_mekanik, 'dimulai', NOW());
+        
+        -- Ubah status stall menjadi terpakai
+        UPDATE tbl_stall SET status = 'terpakai' WHERE id_stall = p_id_stall;
+    END IF;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_selesaikan_servis` (IN `in_id_pengerjaan` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_selesaikan_servis` (IN `p_id_pengerjaan` INT)   BEGIN
     DECLARE v_id_booking INT;
+    DECLARE v_id_stall INT;
+    DECLARE v_harga_paket DECIMAL(12,2);
+    DECLARE v_biaya_suku_cadang DECIMAL(12,2);
+    DECLARE v_total_tagihan DECIMAL(12,2);
+    DECLARE v_count_pembayaran INT;
     
-        SELECT id_booking INTO v_id_booking FROM tbl_pengerjaan WHERE id_pengerjaan = in_id_pengerjaan;
-    IF v_id_booking IS NULL THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Pengerjaan servis tidak ditemukan!';
-    END IF;
+    -- Dapatkan ID Booking dan ID Stall
+    SELECT id_booking INTO v_id_booking FROM tbl_pengerjaan WHERE id_pengerjaan = p_id_pengerjaan;
+    SELECT id_stall INTO v_id_stall FROM tbl_booking WHERE id_booking = v_id_booking;
     
-        UPDATE tbl_pengerjaan 
-    SET status = 'Selesai', waktu_selesai = NOW() 
-    WHERE id_pengerjaan = in_id_pengerjaan;
+    -- Update status pengerjaan
+    UPDATE tbl_pengerjaan 
+    SET status = 'selesai', waktu_selesai = NOW() 
+    WHERE id_pengerjaan = p_id_pengerjaan;
     
-        UPDATE tbl_booking 
+    -- Update status booking (Trigger trg_selesai_booking otomatis membebaskan stall)
+    UPDATE tbl_booking 
     SET status = 'selesai' 
     WHERE id_booking = v_id_booking;
+    
+    -- Perhitungan Biaya Jasa Paket
+    SELECT pl.harga INTO v_harga_paket 
+    FROM tbl_booking b 
+    JOIN tbl_paket_layanan pl ON b.id_paket = pl.id_paket 
+    WHERE b.id_booking = v_id_booking;
+    
+    -- Perhitungan Biaya Suku Cadang
+    SELECT IFNULL(SUM(jumlah_pakai * harga_satuan), 0.00) INTO v_biaya_suku_cadang 
+    FROM tbl_pengerjaan_suku_cadang 
+    WHERE id_pengerjaan = p_id_pengerjaan;
+    
+    -- Hitung total tagihan menggunakan UDF
+    SET v_total_tagihan = udf_hitung_total_servis(v_harga_paket, v_biaya_suku_cadang);
+    
+    -- Cek jika invoice pembayaran sudah ada
+    SELECT COUNT(*) INTO v_count_pembayaran FROM tbl_pembayaran WHERE id_booking = v_id_booking;
+    
+    IF v_count_pembayaran = 0 THEN
+        -- Insert invoice baru
+        INSERT INTO tbl_pembayaran (id_booking, nomor_nota, biaya_jasa, biaya_suku_cadang, total_tagihan, status)
+        VALUES (v_id_booking, CONCAT('INV-', DATE_FORMAT(NOW(), '%Y%m%d'), '-', p_id_pengerjaan), v_harga_paket, v_biaya_suku_cadang, v_total_tagihan, 'belum_bayar');
+    ELSE
+        -- Update invoice yang ada
+        UPDATE tbl_pembayaran 
+        SET biaya_jasa = v_harga_paket, 
+            biaya_suku_cadang = v_biaya_suku_cadang, 
+            total_tagihan = v_total_tagihan 
+        WHERE id_booking = v_id_booking;
+    END IF;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_tambah_booking` (IN `in_kode_booking` VARCHAR(20), IN `in_id_pelanggan` INT, IN `in_id_kendaraan` INT, IN `in_id_paket` INT, IN `in_tanggal_servis` DATE, IN `in_jam_servis` TIME, IN `in_keluhan` TEXT)   BEGIN
-        IF NOT EXISTS (SELECT 1 FROM tbl_pelanggan WHERE id_pelanggan = in_id_pelanggan) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Pelanggan tidak terdaftar!';
-    END IF;
-    
-        IF NOT EXISTS (SELECT 1 FROM tbl_kendaraan WHERE id_kendaraan = in_id_kendaraan) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Kendaraan tidak ditemukan!';
-    END IF;
-    
-        INSERT INTO tbl_booking (
-        kode_booking, id_pelanggan, id_kendaraan, id_paket, 
-        tanggal_servis, jam_servis, keluhan, status
-    ) VALUES (
-        in_kode_booking, in_id_pelanggan, in_id_kendaraan, in_id_paket,
-        in_tanggal_servis, in_jam_servis, in_keluhan, 'menunggu'
-    );
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_tambah_sparepart` (IN `in_id_pengerjaan` INT, IN `in_id_sparepart` INT, IN `in_qty` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_tambah_sparepart` (IN `p_id_pengerjaan` INT, IN `p_id_suku_cadang` INT, IN `p_jumlah_pakai` INT)   BEGIN
     DECLARE v_harga DECIMAL(12,2);
     
-        IF NOT EXISTS (SELECT 1 FROM tbl_pengerjaan WHERE id_pengerjaan = in_id_pengerjaan) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Pengerjaan servis tidak ditemukan!';
-    END IF;
+    -- Ambil harga satuan suku cadang
+    SELECT harga_satuan INTO v_harga FROM tbl_suku_cadang WHERE id_suku_cadang = p_id_suku_cadang;
     
-        SELECT harga_satuan INTO v_harga FROM tbl_suku_cadang WHERE id_suku_cadang = in_id_sparepart;
-    IF v_harga IS NULL THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Suku cadang tidak ditemukan!';
-    END IF;
-    
-        INSERT INTO tbl_pengerjaan_suku_cadang (id_pengerjaan, id_suku_cadang, jumlah_pakai, harga_satuan)
-    VALUES (in_id_pengerjaan, in_id_sparepart, in_qty, v_harga);
+    -- Insert ke tabel pengerjaan suku cadang (Trigger trg_kurangi_stok_sparepart akan memotong stok otomatis)
+    INSERT INTO tbl_pengerjaan_suku_cadang (id_pengerjaan, id_suku_cadang, jumlah_pakai, harga_satuan)
+    VALUES (p_id_pengerjaan, p_id_suku_cadang, p_jumlah_pakai, v_harga);
 END$$
 
 --
 -- Functions
 --
-CREATE DEFINER=`root`@`localhost` FUNCTION `fn_hitung_durasi_servis` (`pengerjaan_id` INT) RETURNS INT(11) DETERMINISTIC BEGIN
-    DECLARE v_mulai DATETIME;
-    DECLARE v_selesai DATETIME;
-    DECLARE v_durasi INT DEFAULT 0;
-    
-    SELECT waktu_mulai, waktu_selesai INTO v_mulai, v_selesai 
-    FROM tbl_pengerjaan 
-    WHERE id_pengerjaan = pengerjaan_id;
-    
-    IF v_mulai IS NOT NULL AND v_selesai IS NOT NULL THEN
-        SET v_durasi = TIMESTAMPDIFF(MINUTE, v_mulai, v_selesai);
-    END IF;
-    
-    RETURN v_durasi;
-END$$
-
-CREATE DEFINER=`root`@`localhost` FUNCTION `fn_hitung_nilai_mekanik` (`mekanik_id` INT) RETURNS INT(11) DETERMINISTIC BEGIN
-    DECLARE v_jumlah_servis INT DEFAULT 0;
-    DECLARE v_jumlah_rusak INT DEFAULT 0;
-    
-        SELECT COUNT(*) INTO v_jumlah_servis 
-    FROM tbl_pengerjaan 
-    WHERE id_mekanik = mekanik_id AND status = 'Selesai';
-    
-        SELECT IFNULL(SUM(pa.jumlah_pinjam), 0) INTO v_jumlah_rusak
-    FROM tbl_peminjaman_alat pa
-    JOIN tbl_pengerjaan p ON pa.id_pengerjaan = p.id_pengerjaan
-    WHERE p.id_mekanik = mekanik_id 
-      AND pa.status = 'dikembalikan' 
-      AND pa.kondisi_kembali IN ('rusak_ringan', 'rusak_berat');
-      
-    RETURN (v_jumlah_servis * 10) - (v_jumlah_rusak * 5);
-END$$
-
-CREATE DEFINER=`root`@`localhost` FUNCTION `fn_hitung_subtotal_sparepart` (`harga` DECIMAL(12,2), `qty` INT) RETURNS DECIMAL(12,2) DETERMINISTIC BEGIN
-    RETURN harga * qty;
-END$$
-
-CREATE DEFINER=`root`@`localhost` FUNCTION `fn_hitung_total_servis` (`booking_id` INT) RETURNS DECIMAL(12,2) DETERMINISTIC BEGIN
-    DECLARE v_harga_paket DECIMAL(12,2) DEFAULT 0.00;
-    DECLARE v_harga_sparepart DECIMAL(12,2) DEFAULT 0.00;
-    
-        SELECT pk.harga INTO v_harga_paket
-    FROM tbl_booking b
-    JOIN tbl_paket_layanan pk ON b.id_paket = pk.id_paket
-    WHERE b.id_booking = booking_id;
-    
-        SELECT IFNULL(SUM(pcs.jumlah_pakai * pcs.harga_satuan), 0.00) INTO v_harga_sparepart
-    FROM tbl_pengerjaan p
-    JOIN tbl_pengerjaan_suku_cadang pcs ON p.id_pengerjaan = pcs.id_pengerjaan
-    WHERE p.id_booking = booking_id;
-    
-    RETURN v_harga_paket + v_harga_sparepart;
-END$$
-
 CREATE DEFINER=`root`@`localhost` FUNCTION `udf_hitung_durasi_servis` (`p_mulai` DATETIME, `p_selesai` DATETIME) RETURNS VARCHAR(50) CHARSET utf8mb4 COLLATE utf8mb4_general_ci DETERMINISTIC BEGIN
     DECLARE v_menit INT;
     SET v_menit = TIMESTAMPDIFF(MINUTE, p_mulai, p_selesai);
@@ -191,8 +151,10 @@ CREATE DEFINER=`root`@`localhost` FUNCTION `udf_hitung_subtotal_sparepart` (`p_h
     RETURN p_harga * p_qty;
 END$$
 
-CREATE DEFINER=`root`@`localhost` FUNCTION `udf_hitung_total` (`booking_id` INT) RETURNS DECIMAL(12,2) DETERMINISTIC BEGIN
-    RETURN fn_hitung_total_servis(booking_id);
+CREATE DEFINER=`root`@`localhost` FUNCTION `udf_hitung_total` (`p_harga_paket` INT) RETURNS INT(11) DETERMINISTIC BEGIN
+    DECLARE v_total INT;
+    SET v_total = p_harga_paket;
+    RETURN v_total;
 END$$
 
 CREATE DEFINER=`root`@`localhost` FUNCTION `udf_hitung_total_servis` (`p_tarif` DECIMAL(12,2), `p_total_sparepart` DECIMAL(12,2)) RETURNS DECIMAL(12,2) DETERMINISTIC BEGIN
@@ -240,7 +202,8 @@ CREATE TABLE `tbl_alat_kerja` (
 --
 
 INSERT INTO `tbl_alat_kerja` (`id_alat`, `nama_alat`, `kode_alat`, `jumlah`, `kondisi`) VALUES
-(4, 'Kunci T 14 Tekiro', 'ALT-001', 3, 'baik');
+(4, 'Kunci T 14 Tekiro', 'ALT-001', 3, 'baik'),
+(5, 'Kunci Roda', 'ALT-002', 5, 'baik');
 
 -- --------------------------------------------------------
 
@@ -272,9 +235,7 @@ INSERT INTO `tbl_booking` (`id_booking`, `kode_booking`, `id_pelanggan`, `id_ken
 (2, 'BK-20260630-001', 4, 3, 3, 1, 1, '2026-07-02', '07:00:00', '-', 'selesai', '2026-06-30 01:31:45'),
 (3, 'BK-20260703-001', 3, 4, 1, 1, NULL, '2026-07-13', '11:00:00', '-', 'selesai', '2026-07-03 13:33:01'),
 (4, 'BK-20260703-002', 3, 4, 3, 1, 4, '2026-07-04', '04:11:00', '', 'Dalam Pengerjaan', '2026-07-03 19:11:25'),
-(5, 'BK-20260704-001', 2, 1, 3, NULL, NULL, '2026-07-15', '09:10:00', '', 'selesai', '2026-07-04 07:19:31'),
-(6, 'BK-20260704-002', 3, 4, 4, 2, 4, '2026-07-23', '08:14:00', 'berasep', 'terkonfirmasi', '2026-07-04 11:14:41'),
-(7, 'BK-20260706-001', 3, 4, 3, 1, 4, '2026-07-06', '12:56:47', '', 'terkonfirmasi', '2026-07-06 05:56:47');
+(5, 'BK-20260704-001', 2, 1, 3, NULL, NULL, '2026-07-15', '09:10:00', '', 'selesai', '2026-07-04 07:19:31');
 
 --
 -- Triggers `tbl_booking`
@@ -287,30 +248,6 @@ CREATE TRIGGER `trg_selesai_booking` AFTER UPDATE ON `tbl_booking` FOR EACH ROW 
 END
 $$
 DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `trg_stall_tersedia` AFTER UPDATE ON `tbl_booking` FOR EACH ROW BEGIN
-    IF LOWER(NEW.status) = 'selesai' AND OLD.status != NEW.status AND NEW.id_stall IS NOT NULL THEN
-        UPDATE tbl_stall 
-        SET status = 'tersedia' 
-        WHERE id_stall = NEW.id_stall;
-    END IF;
-END
-$$
-DELIMITER ;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `tbl_histori_pengembalian_alat`
---
-
-CREATE TABLE `tbl_histori_pengembalian_alat` (
-  `id_histori` int(11) NOT NULL,
-  `id_peminjaman` int(11) NOT NULL,
-  `id_alat` int(11) NOT NULL,
-  `kondisi_kembali` varchar(30) NOT NULL,
-  `waktu_kembali` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -358,7 +295,7 @@ CREATE TABLE `tbl_mekanik` (
 --
 
 INSERT INTO `tbl_mekanik` (`id_mekanik`, `nama`, `kepegawaian`, `spesialisasi`, `shift`, `username`, `password`) VALUES
-(1, 'Mekanik\r\n', 'MK-001', 'Mesin & Oli', 'pagi', 'mekanik', 'mekanik123'),
+(1, 'Mekanik1', 'MK-001', 'Mesin & Oli', 'pagi', 'mekanik', 'mekanik123'),
 (2, 'Yoga Noval', '0920250050', 'Kelistrikan', 'pagi', 'noval', 'noval123'),
 (4, 'Ferdy', '0920250036', 'Overhaul Engine', 'siang', 'ferdy', 'ferdy123');
 
@@ -382,8 +319,7 @@ CREATE TABLE `tbl_paket_layanan` (
 INSERT INTO `tbl_paket_layanan` (`id_paket`, `nama_paket`, `deskripsi`, `harga`) VALUES
 (1, 'Servis Berkala', 'Cek & setel rem, rantai, oli, Pembersihan komponen utama, Cocok tiap 2–3 bulan sekali', 500000.00),
 (3, 'Ganti Oli + Servis', 'Semua item servis berkala, Ganti oli sesuai tipe Kendaraan,  Estimasi waktu pengerjaan jelas', 100000.00),
-(4, 'Servis Besar', ' Pengecekan mesin lebih detail, Penggantian suku cadang bila perlu, Rincian sparepart terpakai tercatat', 1500000.00),
-(5, 'Overhaul Mesin', 'Turun Mesin\r\n', 145000.00);
+(4, 'Servis Besar', ' Pengecekan mesin lebih detail, Penggantian suku cadang bila perlu, Rincian sparepart terpakai tercatat', 1500000.00);
 
 -- --------------------------------------------------------
 
@@ -412,7 +348,8 @@ INSERT INTO `tbl_pelanggan` (`id_pelanggan`, `nomor_pelanggan`, `nama_lengkap`, 
 (2, 'CS-002', 'Rayyan Abdurrahman Qadar', '0920250049', '81210822482', '', '', 'customer2', 'aktif', '2026-06-18 00:18:35'),
 (3, 'CS-003', 'Daffa Hanif Muzaki', '0920250032', '81234567889', '', '', 'customer3', 'aktif', '2026-06-18 00:20:34'),
 (4, 'CS-004', 'Rasya Genteng', '0920250048', '8153163517', '', '', 'customer4', 'aktif', '2026-06-22 09:22:24'),
-(8, 'CS-005', 'Mazyan Ghiffani', '0920250040', '836748264927', '', '', '', 'aktif', '2026-06-30 04:05:54');
+(8, 'CS-005', 'Mazyan Ghiffani', '0920250040', '836748264927', '', '', '', 'aktif', '2026-06-30 04:05:54'),
+(10, 'CS-006', 'Jonathan', '0920250037', '081280123889', '', '', 'jo123', 'aktif', '2026-07-06 08:39:12');
 
 -- --------------------------------------------------------
 
@@ -462,13 +399,41 @@ CREATE TABLE `tbl_peminjaman_alat` (
 --
 DELIMITER $$
 CREATE TRIGGER `trg_histori_pengembalian_alat` AFTER UPDATE ON `tbl_peminjaman_alat` FOR EACH ROW BEGIN
-    IF NEW.status = 'dikembalikan' AND OLD.status != 'dikembalikan' THEN
-        INSERT INTO tbl_histori_pengembalian_alat (id_peminjaman, id_alat, kondisi_kembali, waktu_kembali)
-        VALUES (NEW.id_peminjaman, NEW.id_alat, NEW.kondisi_kembali, NEW.waktu_kembali);
+    -- Jika status berubah menjadi dikembalikan
+    IF NEW.status = 'dikembalikan' AND OLD.status = 'dipinjam' THEN
+        -- Jika alat dikembalikan rusak, kurangi stok alat baik di tbl_alat_kerja
+        IF NEW.kondisi_kembali IN ('rusak_ringan', 'rusak_berat') THEN
+            UPDATE tbl_alat_kerja 
+            SET kondisi = 'rusak', jumlah = GREATEST(0, jumlah - NEW.jumlah_pinjam)
+            WHERE id_alat = NEW.id_alat;
+        END IF;
     END IF;
 END
 $$
 DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_pengadaan`
+--
+
+CREATE TABLE `tbl_pengadaan` (
+  `id_pengadaan` int(11) NOT NULL,
+  `kode_pengadaan` varchar(20) NOT NULL,
+  `id_suku_cadang` int(11) NOT NULL,
+  `supplier` varchar(100) NOT NULL,
+  `jumlah` int(11) NOT NULL,
+  `total_biaya` decimal(15,2) NOT NULL,
+  `tanggal_pengadaan` date NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbl_pengadaan`
+--
+
+INSERT INTO `tbl_pengadaan` (`id_pengadaan`, `kode_pengadaan`, `id_suku_cadang`, `supplier`, `jumlah`, `total_biaya`, `tanggal_pengadaan`) VALUES
+(1, 'PGD-001', 1, 'PT. AHM', 5, 2500000.00, '2026-07-06');
 
 -- --------------------------------------------------------
 
@@ -492,26 +457,8 @@ CREATE TABLE `tbl_pengerjaan` (
 --
 
 INSERT INTO `tbl_pengerjaan` (`id_pengerjaan`, `id_booking`, `id_mekanik`, `catatan_pemeriksaan`, `catatan_pengerjaan`, `status`, `waktu_mulai`, `waktu_selesai`) VALUES
-(1, 2, 1, NULL, '', 'Sedang Dikerjakan', '2026-07-03 20:38:09', '2026-07-03 20:38:13'),
-(2, 1, 2, NULL, NULL, 'selesai', '2026-07-03 20:38:16', '2026-07-03 20:38:19'),
-(3, 7, 4, NULL, NULL, 'dimulai', '2026-07-06 12:57:01', NULL);
-
---
--- Triggers `tbl_pengerjaan`
---
-DELIMITER $$
-CREATE TRIGGER `trg_stall_digunakan` AFTER INSERT ON `tbl_pengerjaan` FOR EACH ROW BEGIN
-    DECLARE v_id_stall INT;
-    
-    SELECT id_stall INTO v_id_stall FROM tbl_booking WHERE id_booking = NEW.id_booking;
-    IF v_id_stall IS NOT NULL THEN
-        UPDATE tbl_stall 
-        SET status = 'terpakai' 
-        WHERE id_stall = v_id_stall;
-    END IF;
-END
-$$
-DELIMITER ;
+(1, 2, 1, NULL, NULL, 'selesai', '2026-07-03 20:38:09', '2026-07-03 20:38:13'),
+(2, 1, 2, NULL, NULL, 'selesai', '2026-07-03 20:38:16', '2026-07-03 20:38:19');
 
 -- --------------------------------------------------------
 
@@ -540,16 +487,17 @@ DELIMITER $$
 CREATE TRIGGER `trg_kurangi_stok_sparepart` BEFORE INSERT ON `tbl_pengerjaan_suku_cadang` FOR EACH ROW BEGIN
     DECLARE v_stok INT;
     
+    -- Ambil stok sekarang
     SELECT stok INTO v_stok FROM tbl_suku_cadang WHERE id_suku_cadang = NEW.id_suku_cadang;
-    IF v_stok IS NULL THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Suku cadang tidak ditemukan!';
-    ELSEIF v_stok < NEW.jumlah_pakai THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Stok suku cadang tidak mencukupi!';
-    END IF;
     
-        UPDATE tbl_suku_cadang 
-    SET stok = stok - NEW.jumlah_pakai 
-    WHERE id_suku_cadang = NEW.id_suku_cadang;
+    -- Cek jika stok kurang
+    IF v_stok < NEW.jumlah_pakai THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Stok suku cadang tidak mencukupi untuk transaksi ini!';
+    ELSE
+        -- Kurangi stok suku cadang
+        UPDATE tbl_suku_cadang SET stok = stok - NEW.jumlah_pakai WHERE id_suku_cadang = NEW.id_suku_cadang;
+    END IF;
 END
 $$
 DELIMITER ;
@@ -572,8 +520,9 @@ CREATE TABLE `tbl_stall` (
 --
 
 INSERT INTO `tbl_stall` (`id_stall`, `nomor_stall`, `keterangan`, `status`) VALUES
-(1, 'STL-001', 'Stall Tune Up', 'terpakai'),
-(2, 'STL-002', 'Stall Kelistrikan', 'tersedia');
+(1, 'STL-001', 'Stall Tune Up', 'tersedia'),
+(2, 'STL-002', 'Stall Kelistrikan', 'tersedia'),
+(3, 'STL-003', 'Stall Overhaul', '');
 
 -- --------------------------------------------------------
 
@@ -594,7 +543,7 @@ CREATE TABLE `tbl_suku_cadang` (
 --
 
 INSERT INTO `tbl_suku_cadang` (`id_suku_cadang`, `nama_part`, `kode_part`, `stok`, `harga_satuan`) VALUES
-(1, 'Kampas Rem Belakang Toyota Avanza Veloz', 'SP-001', 20, 342000.00),
+(1, 'Kampas Rem Belakang Toyota Avanza Veloz', 'SP-001', 25, 342000.00),
 (2, 'Kampas Kopling Daihatsu Xenia', 'SP-002', 12, 250000.00);
 
 --
@@ -625,14 +574,6 @@ ALTER TABLE `tbl_booking`
   ADD KEY `id_paket` (`id_paket`),
   ADD KEY `id_stall` (`id_stall`),
   ADD KEY `id_mekanik` (`id_mekanik`);
-
---
--- Indexes for table `tbl_histori_pengembalian_alat`
---
-ALTER TABLE `tbl_histori_pengembalian_alat`
-  ADD PRIMARY KEY (`id_histori`),
-  ADD KEY `id_peminjaman` (`id_peminjaman`),
-  ADD KEY `id_alat` (`id_alat`);
 
 --
 -- Indexes for table `tbl_kendaraan`
@@ -677,6 +618,12 @@ ALTER TABLE `tbl_peminjaman_alat`
   ADD KEY `id_alat` (`id_alat`);
 
 --
+-- Indexes for table `tbl_pengadaan`
+--
+ALTER TABLE `tbl_pengadaan`
+  ADD PRIMARY KEY (`id_pengadaan`);
+
+--
 -- Indexes for table `tbl_pengerjaan`
 --
 ALTER TABLE `tbl_pengerjaan`
@@ -719,19 +666,13 @@ ALTER TABLE `tbl_admin`
 -- AUTO_INCREMENT for table `tbl_alat_kerja`
 --
 ALTER TABLE `tbl_alat_kerja`
-  MODIFY `id_alat` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_alat` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `tbl_booking`
 --
 ALTER TABLE `tbl_booking`
-  MODIFY `id_booking` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
-
---
--- AUTO_INCREMENT for table `tbl_histori_pengembalian_alat`
---
-ALTER TABLE `tbl_histori_pengembalian_alat`
-  MODIFY `id_histori` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_booking` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `tbl_kendaraan`
@@ -743,7 +684,7 @@ ALTER TABLE `tbl_kendaraan`
 -- AUTO_INCREMENT for table `tbl_mekanik`
 --
 ALTER TABLE `tbl_mekanik`
-  MODIFY `id_mekanik` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_mekanik` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `tbl_paket_layanan`
@@ -755,7 +696,7 @@ ALTER TABLE `tbl_paket_layanan`
 -- AUTO_INCREMENT for table `tbl_pelanggan`
 --
 ALTER TABLE `tbl_pelanggan`
-  MODIFY `id_pelanggan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id_pelanggan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `tbl_pembayaran`
@@ -770,10 +711,16 @@ ALTER TABLE `tbl_peminjaman_alat`
   MODIFY `id_peminjaman` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `tbl_pengadaan`
+--
+ALTER TABLE `tbl_pengadaan`
+  MODIFY `id_pengadaan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `tbl_pengerjaan`
 --
 ALTER TABLE `tbl_pengerjaan`
-  MODIFY `id_pengerjaan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_pengerjaan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `tbl_pengerjaan_suku_cadang`
@@ -785,7 +732,7 @@ ALTER TABLE `tbl_pengerjaan_suku_cadang`
 -- AUTO_INCREMENT for table `tbl_stall`
 --
 ALTER TABLE `tbl_stall`
-  MODIFY `id_stall` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_stall` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `tbl_suku_cadang`
@@ -806,13 +753,6 @@ ALTER TABLE `tbl_booking`
   ADD CONSTRAINT `tbl_booking_ibfk_3` FOREIGN KEY (`id_paket`) REFERENCES `tbl_paket_layanan` (`id_paket`),
   ADD CONSTRAINT `tbl_booking_ibfk_4` FOREIGN KEY (`id_stall`) REFERENCES `tbl_stall` (`id_stall`) ON DELETE SET NULL,
   ADD CONSTRAINT `tbl_booking_ibfk_5` FOREIGN KEY (`id_mekanik`) REFERENCES `tbl_mekanik` (`id_mekanik`) ON DELETE SET NULL;
-
---
--- Constraints for table `tbl_histori_pengembalian_alat`
---
-ALTER TABLE `tbl_histori_pengembalian_alat`
-  ADD CONSTRAINT `fk_histori_alat` FOREIGN KEY (`id_alat`) REFERENCES `tbl_alat_kerja` (`id_alat`),
-  ADD CONSTRAINT `fk_histori_peminjaman` FOREIGN KEY (`id_peminjaman`) REFERENCES `tbl_peminjaman_alat` (`id_peminjaman`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `tbl_kendaraan`

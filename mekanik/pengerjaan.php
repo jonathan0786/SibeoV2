@@ -57,253 +57,175 @@ if (isset($_POST['update_pengerjaan'])) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons untuk Sidebar -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
     <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f1f5f9;
-            color: #1e293b;
-            overflow-x: hidden;
-        }
-        .sidebar {
-            background: #111625;
-            height: 100vh;
-            position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            z-index: 999;
-            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        .sidebar-brand-wrapper {
-            padding: 20px 24px 10px 24px;
-        }
-        .sidebar-brand {
-            font-size: 22px;
-            font-weight: 800;
-            letter-spacing: 1.5px;
-            color: #38bdf8;
-        }
-        .sidebar-subtitle {
-            font-size: 9px; 
-            font-weight: 700;
-            letter-spacing: 1px; 
-            color: #475569;
-            margin-top: 2px;
-            text-transform: uppercase;
-        }
-        .nav-section-title {
-            font-size: 10px;
-            font-weight: 800;
-            color: #334155;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            padding: 15px 24px 6px 24px;
-        }
-        .sidebar .nav-link {
-            color: #94a3b8;
-            font-size: 14px;
-            font-weight: 600;
-            padding: 11px 24px; 
-            display: flex;
-            align-items: center;
-            transition: all 0.2s ease;
-            border-left: 4px solid transparent;
-            text-decoration: none;
-        }
-        .sidebar .nav-link i {
-            font-size: 16px;
-            width: 28px;
-            color: #64748b;
-            transition: all 0.2s ease;
-        }
-        .sidebar .nav-link:hover {
-            color: #38bdf8;
-            background: rgba(56, 189, 248, 0.04);
-        }
-        .sidebar .nav-link:hover i {
-            color: #38bdf8;
-        }
-        .sidebar .nav-link.active {
-            background: rgba(59, 130, 246, 0.12);
-            color: #3b82f6;
-            font-weight: 700;
-            border-left-color: #3b82f6;
-        }
-        .sidebar .nav-link.active i {
-            color: #3b82f6;
-        }
-        .logout-link {
-            color: #ef4444 !important;
-            font-weight: 700 !important;
-        }
-        .logout-link i {
-            color: #ef4444 !important;
-        }
-        .logout-link:hover {
-            background: rgba(239, 68, 68, 0.08) !important;
+        /* CSS UNIFIED STANDAR */
+        :root {
+            --bg-body: #f4f6f9;
+            --sidebar-bg: #1e293b;
+            --sidebar-color: #94a3b8;
+            --sidebar-active: #3b82f6;
+            --text-dark: #0f172a;
         }
         
-        /* FIX: Menghilangkan margin-left manual agar diserahkan murni ke Grid Bootstrap offset */
-        .main-wrapper { padding: 25px 15px; }
-        @media (min-width: 768px) { .main-wrapper { padding: 40px; } }
+        * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+        body { background-color: var(--bg-body); color: #334155; overflow-x: hidden; }
+        .layout-wrapper { display: flex; min-height: 100vh; }
         
-        .table-premium {
-            background: white; border-radius: 24px; box-shadow: 0 4px 18px rgba(148, 163, 184, 0.08); padding: 25px;
+        /* SIDEBAR COMPONENT */
+        .sidebar-panel { 
+            width: 280px; background: var(--sidebar-bg); flex-shrink: 0; 
+            display: flex; flex-direction: column; justify-content: space-between; 
+            padding: 30px 20px; box-shadow: 10px 0 30px rgba(15, 23, 42, 0.05);
+            position: sticky; top: 0; height: 100vh;
         }
-        .table-premium thead th {
-            background-color: #f8fafc; color: #64748b; font-size: 12px; font-weight: 700; text-transform: uppercase; padding: 16px 20px; border-bottom: none;
+        .brand-section { padding: 0 12px 25px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .brand-title { font-size: 24px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 10px; }
+        .brand-title span { color: var(--sidebar-active); }
+        .brand-subtitle { font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
+
+        .menu-container { overflow-y: auto; flex-grow: 1; margin-top: 20px; }
+        .sidebar-panel .nav-link { 
+            color: var(--sidebar-color); font-size: 14px; font-weight: 500; 
+            padding: 12px 16px; display: flex; align-items: center; text-decoration: none; 
+            border-radius: 12px; margin-bottom: 4px; transition: all 0.2s ease; 
         }
+        .sidebar-panel .nav-link i { width: 24px; font-size: 16px; margin-right: 12px; text-align: center; }
+        .sidebar-panel .nav-link:hover { color: #ffffff; background: rgba(255, 255, 255, 0.04); }
+        .sidebar-panel .nav-link.active { background: var(--sidebar-active); color: #ffffff; font-weight: 600; box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.35); }
+        .section-header { font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; padding: 20px 12px 8px 12px; }
+        
+        .logout-box { padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); }
+        .logout-btn { color: #f87171 !important; font-weight: 600 !important; background: rgba(239, 68, 68, 0.05); border-radius: 12px; }
+        .logout-btn:hover { background: rgba(239, 68, 68, 0.1) !important; color: #ef4444 !important; }
+        
+        /* MAIN CANVAS */
+        .main-canvas { flex-grow: 1; padding: 40px 50px; max-width: calc(100% - 280px); }
+
+        /* Komponen Tabel Premium */
+        .table-premium { background: white; border-radius: 24px; box-shadow: 0 4px 18px rgba(148, 163, 184, 0.08); padding: 25px; }
+        .table-premium thead th { background-color: #f8fafc; color: #64748b; font-size: 12px; font-weight: 700; text-transform: uppercase; padding: 16px 20px; border-bottom: none; }
         .table-premium tbody td { padding: 18px 20px; border-bottom: 1px solid #f1f5f9; color: #475569; font-size: 14px; }
     </style>
 </head>
 <body>
 
-<div class="bg-dark text-white d-md-none p-3 sticky-top d-flex justify-content-between align-items-center shadow-sm">
-    <div class="fw-bold fs-5" style="background: linear-gradient(45deg, #38bdf8, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">SIBEO</div>
-    <button class="btn btn-outline-light btn-sm px-2.5" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu"><i class="fa-solid fa-bars"></i> Menu</button>
-</div>
+<div class="layout-wrapper">
+    <?php include '../includes/sidebar.php'; ?>
 
-<div class="container-fluid p-0">
-    <div class="row g-0">
-        
-        <div class="col-md-3 col-lg-2 sidebar d-none d-md-flex">
+    <div class="main-canvas">
+        <div class="mb-4 d-flex justify-content-between align-items-center">
             <div>
-                <div class="sidebar-brand-wrapper text-start ps-4">
-                    <div class="sidebar-brand">SIBEO</div>
-                    <div class="sidebar-subtitle">Mechanic SYSTEM</div>
-                </div>
-                
-                <div class="nav-section-title">MENU WORKSPACE</div>
-                <div class="nav flex-column">
-                    <a href="dashboard.php" class="nav-link"><i class="fa-solid fa-chart-simple me-3"></i>Dashboard Kerja</a>
-                    <a href="pengerjaan.php" class="nav-link active"><i class="fa-solid fa-screwdriver-wrench me-3"></i>Pengerjaan</a>
-                    <a href="peminjaman_alat.php" class="nav-link"><i class="fa-solid fa-boxes-stacked me-3"></i>Peminjaman Alat</a>
-                </div>
-            </div>
-            
-            <div class="mb-3 pt-2">
-                <div class="nav flex-column">
-                    <a href="../auth/logout.php" class="nav-link logout-link" onclick="return confirm('Keluar dari sistem?')">
-                        <i class="fa-solid fa-sign-out-alt me-3"></i>Keluar
-                    </a>
-                </div>
+                <h3 class="fw-bold m-0 text-dark" style="letter-spacing: -0.5px;">Daftar Tugas Pengerjaan</h3>
+                <p class="text-muted small m-0 mt-1">Kelola status dan berikan catatan perbaikan pada kendaraan pelanggan.</p>
             </div>
         </div>
 
-        <div class="col-md-9 col-lg-10 offset-md-3 offset-lg-2">
-            <div class="main-wrapper">
-                <div class="mb-4 d-flex justify-content-between align-items-center">
-                    <div>
-                        <h3 class="fw-bold m-0 text-dark" style="letter-spacing: -0.5px;">Daftar Tugas Pengerjaan</h3>
-                        <p class="text-muted small m-0 mt-1">Kelola status dan berikan catatan perbaikan pada kendaraan pelanggan.</p>
-                    </div>
-                </div>
+        <div class="table-premium">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>KODE</th>
+                            <th>KENDARAAN & PLAT</th>
+                            <th>LAYANAN & KELUHAN</th>
+                            <th>WAKTU MULAI / SELESAI</th>
+                            <th>STATUS</th>
+                            <th class="text-center">AKSI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php
+                    $query_pengerjaan = mysqli_query($koneksi, "SELECT p.*, b.kode_booking, b.keluhan, k.merk, k.nomor_polisi, l.nama_paket 
+                                                                FROM tbl_pengerjaan p
+                                                                JOIN tbl_booking b ON p.id_booking = b.id_booking
+                                                                JOIN tbl_kendaraan k ON b.id_kendaraan = k.id_kendaraan
+                                                                JOIN tbl_paket_layanan l ON b.id_paket = l.id_paket
+                                                                WHERE p.id_mekanik = '$id_mekanik'
+                                                                ORDER BY p.id_pengerjaan DESC");
 
-                <div class="table-premium">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th>KODE</th>
-                                    <th>KENDARAAN & PLAT</th>
-                                    <th>LAYANAN & KELUHAN</th>
-                                    <th>WAKTU MULAI / SELESAI</th>
-                                    <th>STATUS</th>
-                                    <th class="text-center">AKSI</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            <?php
-                            $query_pengerjaan = mysqli_query($koneksi, "SELECT p.*, b.kode_booking, b.keluhan, k.merk, k.nomor_polisi, l.nama_paket 
-                                                                        FROM tbl_pengerjaan p
-                                                                        JOIN tbl_booking b ON p.id_booking = b.id_booking
-                                                                        JOIN tbl_kendaraan k ON b.id_kendaraan = k.id_kendaraan
-                                                                        JOIN tbl_paket_layanan l ON b.id_paket = l.id_paket
-                                                                        WHERE p.id_mekanik = '$id_mekanik'
-                                                                        ORDER BY p.id_pengerjaan DESC");
-
-                            if (!$query_pengerjaan || mysqli_num_rows($query_pengerjaan) == 0) {
-                                echo "<tr><td colspan='6' class='text-center text-muted py-4 small'>Belum ada daftar pengerjaan yang ditugaskan.</td></tr>";
-                            } else {
-                                while ($r = mysqli_fetch_assoc($query_pengerjaan)) {
-                                    $status = $r['status'];
-                                    $badge = "bg-warning text-warning";
-                                    if ($status == "Selesai") $badge = "bg-success text-success";
-                                    elseif ($status == "Sedang Dikerjakan" || $status == "Proses" || $status == "dimulai") $badge = "bg-primary text-primary";
-                                    ?>
-                                    <tr>
-                                        <td class="fw-bold text-primary"><?= $r['kode_booking']; ?></td>
-                                        <td class="fw-semibold">
-                                            <?= htmlspecialchars($r['merk']); ?>
-                                            <br><code class="text-secondary small fw-bold"><?= htmlspecialchars($r['nomor_polisi']); ?></code>
-                                        </td>
-                                        <td>
-                                            <span class="fw-medium"><?= htmlspecialchars($r['nama_paket']); ?></span>
-                                            <br><small class="text-muted d-block" style="max-width: 250px; font-size: 11px;">Ket: <?= !empty($r['keluhan']) ? htmlspecialchars($r['keluhan']) : '-'; ?></small>
-                                        </td>
-                                        <td style="font-size: 13px;">
-                                            <div><i class="fa-solid fa-play text-muted me-1 small"></i> <?= (!empty($r['waktu_mulai']) && $r['waktu_mulai'] != '0000-00-00 00:00:00') ? $r['waktu_mulai'] : '-'; ?></div>
-                                            <div class="mt-1"><i class="fa-solid fa-flag-checkered text-muted me-1 small"></i> <?= (!empty($r['waktu_selesai']) && $r['waktu_selesai'] != '0000-00-00 00:00:00') ? $r['waktu_selesai'] : '-'; ?></div>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-opacity-10 <?= $badge; ?> px-2.5 py-1.5 rounded text-capitalize" style="font-size: 12px; font-weight: 600;"><?= $status; ?></span>
-                                            <?php if(!empty($r['catatan_pengerjaan'])): ?>
-                                                <br><small class="text-secondary" style="font-size: 11px;"><i>Note: <?= htmlspecialchars($r['catatan_pengerjaan']); ?></i></small>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="text-center">
-                                            <button class="btn btn-sm btn-outline-primary px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#modalUpdate<?= $r['id_pengerjaan']; ?>">
-                                                <i class="fa-solid fa-pen-to-square me-1"></i> Update
-                                            </button>
-                                        </td>
-                                    </tr>
-
-                                    <div class="modal fade" id="modalUpdate<?= $r['id_pengerjaan']; ?>" tabindex="-1" aria-hidden="true">
-                                        <div class="modal-dialog modal-dialog-centered">
-                                            <div class="modal-content" style="border-radius: 16px;">
-                                                <form method="POST" action="">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title fw-bold">Update Pengerjaan - <?= $r['kode_booking']; ?></h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <input type="hidden" name="id_pengerjaan" value="<?= $r['id_pengerjaan']; ?>">
-                                                        
-                                                        <div class="mb-3">
-                                                            <label class="form-label fw-semibold small text-muted">STATUS PENGERJAAN</label>
-                                                            <select class="form-select" name="status_pengerjaan" required>
-                                                                <option value="dimulai" <?= ($status == 'dimulai' || $status == 'Pending') ? 'selected' : ''; ?>>Belum Dikerjakan (Dimulai)</option>
-                                                                <option value="Sedang Dikerjakan" <?= ($status == 'Sedang Dikerjakan' || $status == 'Proses') ? 'selected' : ''; ?>>Sedang Dikerjakan</option>
-                                                                <option value="Selesai" <?= ($status == 'Selesai') ? 'selected' : ''; ?>>Selesai</option>
-                                                            </select>
-                                                        </div>
-                                                        
-                                                        <div class="mb-2">
-                                                            <label class="form-label fw-semibold small text-muted">CATATAN PERBAIKAN</label>
-                                                            <textarea class="form-control" name="catatan_mekanik" rows="3" placeholder="Contoh: Oli sudah diganti, rem depan dibersihkan..."><?= htmlspecialchars($r['catatan_pengerjaan']); ?></textarea>
-                                                        </div>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
-                                                        <button type="submit" name="update_pengerjaan" class="btn btn-sm btn-primary px-3">Simpan Perubahan</button>
-                                                    </div>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <?php
-                                }
-                            }
+                    if (!$query_pengerjaan || mysqli_num_rows($query_pengerjaan) == 0) {
+                        echo "<tr><td colspan='6' class='text-center text-muted py-4 small'>Belum ada daftar pengerjaan yang ditugaskan.</td></tr>";
+                    } else {
+                        while ($r = mysqli_fetch_assoc($query_pengerjaan)) {
+                            $status = $r['status'];
+                            $badge = "bg-warning text-warning";
+                            if ($status == "Selesai") $badge = "bg-success text-success";
+                            elseif ($status == "Sedang Dikerjakan" || $status == "Proses" || $status == "dimulai") $badge = "bg-primary text-primary";
                             ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                            <tr>
+                                <td class="fw-bold text-primary"><?= $r['kode_booking']; ?></td>
+                                <td class="fw-semibold">
+                                    <?= htmlspecialchars($r['merk']); ?>
+                                    <br><code class="text-secondary small fw-bold"><?= htmlspecialchars($r['nomor_polisi']); ?></code>
+                                </td>
+                                <td>
+                                    <span class="fw-medium"><?= htmlspecialchars($r['nama_paket']); ?></span>
+                                    <br><small class="text-muted d-block" style="max-width: 250px; font-size: 11px;">Ket: <?= !empty($r['keluhan']) ? htmlspecialchars($r['keluhan']) : '-'; ?></small>
+                                </td>
+                                <td style="font-size: 13px;">
+                                    <div><i class="fa-solid fa-play text-muted me-1 small"></i> <?= (!empty($r['waktu_mulai']) && $r['waktu_mulai'] != '0000-00-00 00:00:00') ? $r['waktu_mulai'] : '-'; ?></div>
+                                    <div class="mt-1"><i class="fa-solid fa-flag-checkered text-muted me-1 small"></i> <?= (!empty($r['waktu_selesai']) && $r['waktu_selesai'] != '0000-00-00 00:00:00') ? $r['waktu_selesai'] : '-'; ?></div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-opacity-10 <?= $badge; ?> px-2.5 py-1.5 rounded text-capitalize" style="font-size: 12px; font-weight: 600;"><?= $status; ?></span>
+                                    <?php if(!empty($r['catatan_pengerjaan'])): ?>
+                                        <br><small class="text-secondary" style="font-size: 11px;"><i>Note: <?= htmlspecialchars($r['catatan_pengerjaan']); ?></i></small>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-primary px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#modalUpdate<?= $r['id_pengerjaan']; ?>">
+                                        <i class="fa-solid fa-pen-to-square me-1"></i> Update
+                                    </button>
+                                </td>
+                            </tr>
 
-            </div> </div> </div> </div> <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+                            <div class="modal fade" id="modalUpdate<?= $r['id_pengerjaan']; ?>" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content" style="border-radius: 16px;">
+                                        <form method="POST" action="">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title fw-bold">Update Pengerjaan - <?= $r['kode_booking']; ?></h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <input type="hidden" name="id_pengerjaan" value="<?= $r['id_pengerjaan']; ?>">
+                                                
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-semibold small text-muted">STATUS PENGERJAAN</label>
+                                                    <select class="form-select" name="status_pengerjaan" required>
+                                                        <option value="dimulai" <?= ($status == 'dimulai' || $status == 'Pending') ? 'selected' : ''; ?>>Belum Dikerjakan (Dimulai)</option>
+                                                        <option value="Sedang Dikerjakan" <?= ($status == 'Sedang Dikerjakan' || $status == 'Proses') ? 'selected' : ''; ?>>Sedang Dikerjakan</option>
+                                                        <option value="Selesai" <?= ($status == 'Selesai') ? 'selected' : ''; ?>>Selesai</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div class="mb-2">
+                                                    <label class="form-label fw-semibold small text-muted">CATATAN PERBAIKAN</label>
+                                                    <textarea class="form-control" name="catatan_mekanik" rows="3" placeholder="Contoh: Oli sudah diganti, rem depan dibersihkan..."><?= htmlspecialchars($r['catatan_pengerjaan']); ?></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                                <button type="submit" name="update_pengerjaan" class="btn btn-sm btn-primary px-3">Simpan Perubahan</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php
+                        }
+                    }
+                    ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div> 
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

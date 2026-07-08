@@ -1,56 +1,54 @@
 <?php
-$current_page = basename($_SERVER['PHP_SELF']);
-?>
-<div class="col-md-3 col-lg-2 sidebar p-4 d-flex flex-column justify-content-between">
-    <div class="top-group">
-        <div class="brand-section pt-2">
-            <h4 class="fw-bold mb-0 text-white">SIBEO <span class="badge bg-primary ms-1" style="font-size: 10px;">ADMIN</span></h4>
-            <div class="small text-white-50 mt-1" style="font-size: 11px;">Mode Pengembangan (No Session)</div>
-            <hr class="opacity-25 text-white my-3">
-        </div>
+// includes/sidebar.php
+$role = $_SESSION['role'] ?? '';
+$page = basename($_SERVER['PHP_SELF']);
 
-        <div class="menu-section">
-            <ul class="nav flex-column">
-                <li class="nav-item">
-                    <a class="nav-link <?= ($current_page == 'dashboard.php') ? 'active' : ''; ?>" href="../admin/dashboard.php">
-                        <i class="fa-solid fa-chart-pie me-2"></i> Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?= ($current_page == 'pelanggan.php') ? 'active' : ''; ?>" href="../admin/pelanggan.php">
-                        <i class="fa-solid fa-users me-2"></i> Data Pelanggan
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?= ($current_page == 'suku_cadang.php') ? 'active' : ''; ?>" href="../admin/suku_cadang.php">
-                        <i class="fa-solid fa-box me-2"></i> Suku Cadang (Sparepart)
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?= ($current_page == 'alat_kerja.php') ? 'active' : ''; ?>" href="../admin/alat_kerja.php">
-                        <i class="fa-solid fa-screwdriver-wrench me-2"></i> Alat Kerja
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?= ($current_page == 'booking.php') ? 'active' : ''; ?>" href="../transaksi/booking.php">
-                        <i class="fa-solid fa-calendar-check me-2"></i> Booking Servis
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link <?= ($current_page == 'pembayaran.php') ? 'active' : ''; ?>" href="../transaksi/pembayaran.php">
-                        <i class="fa-solid fa-receipt me-2"></i> Kasir & Nota
-                    </a>
-                </li>
-            </ul>
-        </div>
+function isActive($p) { return basename($_SERVER['PHP_SELF']) == $p ? 'active' : ''; }
+?>
+
+<div class="sidebar-panel" id="sidebarPanel">
+    <div class="brand-section">
+        <div class="brand-title"><i class="bi bi-lightning-charge-fill"></i>SIBEO<span>.</span></div>
+        <div class="brand-subtitle"><?php echo strtoupper($role); ?> PANEL</div>
     </div>
 
-    <div class="logout-section mt-4">
-        <hr class="opacity-25 text-white my-3">
-        <a class="nav-link text-danger fw-bold" href="../index.php">
-            <i class="fa-solid fa-arrow-left me-2"></i> Kembali ke Awal
-        </a>
+    <div class="menu-container">
+        <!-- MENU ADMIN -->
+        <?php if($role == 'admin'): ?>
+            <div class="section-header">UTAMA</div>
+            <a href="../admin/dashboard.php" class="nav-link <?= isActive('dashboard.php') ?>"><i class="bi bi-speedometer2"></i>Dashboard</a>
+            <div class="section-header">Data Master</div>
+            <a href="../admin/pelanggan.php" class="nav-link <?= isActive('pelanggan.php') ?>"><i class="bi bi-people-fill"></i>Pelanggan</a>
+            <a href="../admin/suku_cadang.php" class="nav-link <?= isActive('suku_cadang.php') ?>"><i class="bi bi-box-seam-fill"></i>Suku Cadang</a>
+            <a href="../admin/mekanik.php" class="nav-link <?= isActive('mekanik.php') ?>"><i class="bi bi-tools"></i>Mekanik</a>
+            <a href="../admin/paket_layanan.php" class="nav-link <?= isActive('paket_layanan.php') ?>"><i class="bi bi-tags-fill"></i>Paket Layanan</a>
+            <a href="../admin/alat_kerja.php" class="nav-link <?= isActive('alat_kerja.php') ?>"><i class="bi bi-wrench-adjustable-circle-fill"></i>Alat Kerja</a>
+            <a href="../admin/stall.php" class="nav-link <?= isActive('stall.php') ?>"><i class="bi bi-house-gear-fill"></i>Data Stall</a>
+            <div class="section-header">OPERASIONAL</div>
+            <a href="../admin/pengadaan.php" class="nav-link <?= isActive('pengadaan.php') ?>"><i class="bi bi-cart-plus-fill"></i>Pengadaan Stok</a>
+            <a href="../admin/booking.php" class="nav-link <?= isActive('booking.php') ?>"><i class="bi bi-calendar-check-fill"></i>Transaksi Booking</a>
+            <a href="../admin/laporan.php" class="nav-link <?= isActive('laporan.php') ?>"><i class="bi bi-graph-up-arrow"></i>Laporan Pelayanan</a>
+            <a href="../admin/laporan_sparepart.php" class="nav-link <?= isActive('laporan_sparepart.php') ?>"><i class="bi bi-box-seam"></i>Laporan Sparepart</a>
+
+        
+        <!-- MENU MEKANIK -->
+        <?php elseif($role == 'mekanik'): ?>
+            <div class="section-header">WORKSPACE</div>
+            <a href="../mekanik/dashboard.php" class="nav-link <?= isActive('dashboard.php') ?>"><i class="bi bi-chart-line"></i>Dashboard</a>
+            <a href="../mekanik/pengerjaan.php" class="nav-link <?= isActive('pengerjaan.php') ?>"><i class="bi bi-wrench-adjustable"></i>Pengerjaan</a>
+            <a href="../mekanik/peminjaman_alat.php" class="nav-link <?= isActive('peminjaman_alat.php') ?>"><i class="bi bi-box-seam"></i>Pinjam Alat</a>
+
+        <!-- MENU PELANGGAN -->
+        <?php elseif($role == 'pelanggan'): ?>
+            <div class="section-header">PORTAL</div>
+            <a href="../pelanggan/dashboard.php" class="nav-link <?= isActive('dashboard.php') ?>"><i class="bi bi-grid"></i>Dashboard</a>
+            <a href="../pelanggan/booking.php" class="nav-link <?= isActive('booking.php') ?>"><i class="bi bi-calendar-plus"></i>Booking Servis</a>
+            <a href="../pelanggan/kendaraan.php" class="nav-link <?= isActive('kendaraan.php') ?>"><i class="bi bi-car-front"></i>Kendaraan</a>
+            <a href="../pelanggan/riwayat_servis.php" class="nav-link <?= isActive('riwayat_servis.php') ?>"><i class="bi bi-clock-history"></i>Riwayat</a>
+        <?php endif; ?>
+    </div>
+
+    <div class="logout-box">
+        <a href="../auth/logout.php" class="nav-link logout-btn"><i class="bi bi-power"></i> Log Out</a>
     </div>
 </div>
-
-<div class="col-md-9 col-lg-10 main-content">
