@@ -30,9 +30,7 @@ if (isset($_POST['action_tambah'])) {
     $total_biaya    = mysqli_real_escape_string($koneksi, $_POST['total_biaya']);
     $tanggal        = mysqli_real_escape_string($koneksi, $_POST['tanggal_pengadaan']);
     
-    // Matikan auto-commit untuk transaksi aman
     mysqli_autocommit($koneksi, FALSE);
-    
     $sukses = true;
     
     // 1. Insert ke tabel pengadaan
@@ -55,7 +53,7 @@ if (isset($_POST['action_tambah'])) {
 
 if (isset($_GET['hapus'])) {
     $id_hapus = mysqli_real_escape_string($koneksi, $_GET['hapus']);
-    // Ambil data sebelum dihapus untuk kurangi stok kembali
+    
     $get_data = mysqli_query($koneksi, "SELECT id_suku_cadang, jumlah FROM tbl_pengadaan WHERE id_pengadaan='$id_hapus'");
     if(mysqli_num_rows($get_data) > 0) {
         $dt = mysqli_fetch_assoc($get_data);
@@ -64,7 +62,7 @@ if (isset($_GET['hapus'])) {
         
         mysqli_autocommit($koneksi, FALSE);
         $q_del = mysqli_query($koneksi, "DELETE FROM tbl_pengadaan WHERE id_pengadaan='$id_hapus'");
-        $q_up  = mysqli_query($koneksi, "UPDATE tbl_suku_cadang SET stok = stok - $jumlah WHERE id_suku_cadang = '$id_sc'");
+        $q_up  = mysqli_query($koneksi, "UPDATE tbl_suku_cadang SET stok = GREATEST(0, stok - $jumlah) WHERE id_suku_cadang = '$id_sc'");
         
         if($q_del && $q_up){
             mysqli_commit($koneksi);
@@ -90,38 +88,72 @@ function safe_text($value) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
     <style>
-        /* Menggunakan styling yang sama persis dengan file Anda sebelumnya */
-        :root { --bg-body: #f4f6f9; --sidebar-bg: #1e293b; --sidebar-color: #94a3b8; --sidebar-active: #3b82f6; --text-dark: #0f172a; --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02), 0 8px 10px -6px rgba(0, 0, 0, 0.02); }
+        /* CSS UNIFIED (Standar SIBEO 100% Identik Pelanggan) */
+        :root {
+            --bg-body: #f4f6f9;
+            --sidebar-bg: #1e293b;
+            --sidebar-color: #94a3b8;
+            --sidebar-active: #3b82f6;
+            --text-dark: #0f172a;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+
         * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
         body { background-color: var(--bg-body); color: #334155; overflow-x: hidden; }
-        .layout-wrapper { display: flex; min-height: 100vh; }
-        .sidebar-panel { width: 280px; background: var(--sidebar-bg); flex-shrink: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 30px 20px; position: sticky; top: 0; height: 100vh; }
-        .brand-section { padding: 0 12px 25px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; }
-        .brand-title { font-size: 24px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 10px; }
+        .layout-wrapper { display: flex; min-height: 100vh; width: 100%; }
+
+        /* SIDEBAR PANEL */
+        .sidebar-panel { 
+            width: 260px; background: var(--sidebar-bg); flex-shrink: 0; 
+            display: flex; flex-direction: column; padding: 25px 15px; 
+            position: fixed; top: 0; left: 0; bottom: 0; z-index: 1000;
+        }
+        .brand-section { padding: 0 10px 20px 10px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .brand-title { font-size: 22px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 10px; }
         .brand-title span { color: var(--sidebar-active); }
         .brand-subtitle { font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
-        .menu-container { overflow-y: auto; flex-grow: 1; padding-right: 8px; margin-top: 20px; }
-        .section-header { font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; padding: 20px 12px 8px 12px; }
-        .sidebar-panel .nav-link { color: var(--sidebar-color); font-size: 14px; font-weight: 500; padding: 12px 16px; display: flex; align-items: center; text-decoration: none; border-radius: 12px; margin-bottom: 4px; transition: all 0.2s; }
-        .sidebar-panel .nav-link i { width: 24px; font-size: 16px; margin-right: 12px; text-align: center; }
+
+        .menu-container { overflow-y: auto; flex-grow: 1; margin-top: 15px; }
+        .menu-container::-webkit-scrollbar { width: 4px; }
+        .menu-container::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+
+        .section-header { font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; padding: 15px 10px 5px 10px; }
+        .sidebar-panel .nav-link { color: var(--sidebar-color); font-size: 13.5px; font-weight: 600; padding: 10px 15px; display: flex; align-items: center; text-decoration: none; border-radius: 8px; margin-bottom: 4px; transition: all 0.2s; }
+        .sidebar-panel .nav-link i { width: 24px; font-size: 16px; margin-right: 10px; text-align: center; }
         .sidebar-panel .nav-link:hover { color: #ffffff; background: rgba(255, 255, 255, 0.04); }
-        .sidebar-panel .nav-link.active { background: var(--sidebar-active); color: #ffffff; font-weight: 600; box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.35); }
-        .logout-box { padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; }
-        .logout-btn { color: #f87171 !important; font-weight: 600 !important; background: rgba(239, 68, 68, 0.05); }
-        
-        .main-canvas { flex-grow: 1; padding: 40px 50px; max-width: calc(100% - 280px); }
+        .sidebar-panel .nav-link.active { background: var(--sidebar-active); color: #ffffff; font-weight: 700; }
+
+        .logout-box { padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.06); }
+        .logout-btn { color: #f87171 !important; }
+        .logout-btn:hover { background: rgba(239, 68, 68, 0.1) !important; color: #ef4444 !important; }
+
+        /* MAIN CANVAS */
+        .main-canvas { flex-grow: 1; padding: 30px 40px; margin-left: 260px; width: calc(100% - 260px); }
+
+        /* KONTEN DATA CARD */
         .data-card-premium { background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: var(--card-shadow); overflow: hidden; }
         .data-card-header { padding: 24px; background: #ffffff; border-bottom: 1px solid #f1f5f9; }
         .data-card-title { font-size: 18px; font-weight: 700; color: var(--text-dark); margin: 0; }
+        
         .table-premium thead th { background: #f8fafc; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 16px 20px; border-bottom: 1px solid #e2e8f0; }
         .table-premium tbody td { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #334155; }
-        .btn-premium-primary { background-color: var(--sidebar-active); color: #ffffff; border: none; border-radius: 10px; padding: 10px 20px; font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
+
+        .btn-premium-primary { background-color: var(--sidebar-active); color: #ffffff; border: none; border-radius: 10px; padding: 10px 20px; font-size: 13.5px; font-weight: 600; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-premium-primary:hover { background-color: #2563eb; color: #ffffff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); }
+        
+        /* MODAL STYLING */
+        .modal-content { border-radius: 16px; border: none; box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
+        .modal-header { border-bottom: 1px solid #f1f5f9; padding: 20px 24px; }
+        .modal-body { padding: 24px; }
+        .modal-footer { border-top: 1px solid #f1f5f9; padding: 16px 24px; }
         .form-control, .form-select { border-radius: 10px; padding: 10.5px 14px; border: 1px solid #cbd5e1; font-size: 14px; }
+        .form-control:focus, .form-select:focus { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); border-color: var(--sidebar-active); }
     </style>
 </head>
 <body>
 
 <div class="layout-wrapper">
+    <!-- Panggil file sidebar standar -->
     <?php include '../includes/sidebar.php'; ?>
 
     <div class="main-canvas">
@@ -196,9 +228,10 @@ function safe_text($value) {
     </div>
 </div>
 
+<!-- Modal Tambah -->
 <div class="modal fade" id="modalTambah" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 16px; border: none;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title fw-bold text-dark"><i class="bi bi-cart-plus text-primary me-2"></i>Form Pengadaan Barang Masuk</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -206,15 +239,15 @@ function safe_text($value) {
             <form action="pengadaan.php" method="POST">
                 <div class="modal-body">
                     <div class="row g-3">
-                        <div class="col-6">
+                        <div class="col-md-6">
                             <label class="form-label small fw-bold text-secondary">Kode Transaksi</label>
                             <input type="text" name="kode_pengadaan" class="form-control bg-light fw-bold text-primary" value="<?= $kode_otomatis; ?>" readonly>
                         </div>
-                        <div class="col-6">
+                        <div class="col-md-6">
                             <label class="form-label small fw-bold text-secondary">Tanggal Pengadaan</label>
                             <input type="date" name="tanggal_pengadaan" class="form-control" value="<?= date('Y-m-d'); ?>" required>
                         </div>
-                        <div class="col-12">
+                        <div class="col-md-12">
                             <label class="form-label small fw-bold text-secondary">Pilih Suku Cadang (Sparepart)</label>
                             <select name="id_suku_cadang" class="form-select" required>
                                 <option value="">-- Pilih Barang yang Dibeli --</option>
@@ -226,22 +259,23 @@ function safe_text($value) {
                                 ?>
                             </select>
                         </div>
-                        <div class="col-12">
+                        <div class="col-md-12">
                             <label class="form-label small fw-bold text-secondary">Nama Toko / Supplier</label>
                             <input type="text" name="supplier" class="form-control" placeholder="Contoh: PT. Astra Otoparts" required>
                         </div>
-                        <div class="col-5">
+                        <div class="col-md-5">
                             <label class="form-label small fw-bold text-secondary">Jumlah (Qty)</label>
                             <input type="number" name="jumlah" class="form-control" placeholder="0" min="1" required>
                         </div>
-                        <div class="col-7">
+                        <div class="col-md-7">
                             <label class="form-label small fw-bold text-secondary">Total Tagihan / Biaya (Rp)</label>
                             <input type="number" name="total_biaya" class="form-control" placeholder="Contoh: 1500000" min="0" required>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" name="action_tambah" class="btn btn-primary w-100 fw-bold" style="border-radius:10px;">Simpan & Tambah ke Stok</button>
+                    <button type="button" class="btn btn-light fw-semibold px-4" style="border-radius:10px;" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" name="action_tambah" class="btn btn-primary fw-semibold px-4" style="border-radius:10px;">Simpan & Tambah ke Stok</button>
                 </div>
             </form>
         </div>
