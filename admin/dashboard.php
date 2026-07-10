@@ -86,24 +86,46 @@ function safe_text($value) {
         .main-canvas { flex-grow: 1; padding: 40px 50px; max-width: calc(100% - 280px); }
         
         /* WIDGET CARD DASHBOARD */
-        .widget-stat-card {
-            background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px;
-            padding: 24px; box-shadow: var(--card-shadow); display: flex;
-            align-items: center; justify-content: space-between; transition: transform 0.2s ease;
+        .hero-banner {
+            position: relative; overflow: hidden; border-radius: 24px; padding: 28px 30px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 45%, #2563eb 100%);
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.16);
         }
-        .widget-stat-card:hover { transform: translateY(-4px); }
+        .hero-banner::before {
+            content: ''; position: absolute; inset: auto -30px -40px auto; width: 220px; height: 220px;
+            background: rgba(255,255,255,0.08); border-radius: 50%;
+        }
+        .hero-chip {
+            display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px;
+            background: rgba(255,255,255,0.14); color: #dbeafe; border-radius: 999px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .hero-side-card {
+            min-width: 260px; background: rgba(255,255,255,0.14); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.18); border-radius: 18px; padding: 16px;
+            color: #f8fafc;
+        }
+
+        .widget-stat-card {
+            background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+            border: 1px solid #e2e8f0; border-radius: 18px;
+            padding: 22px; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05);
+            display: flex; align-items: center; justify-content: space-between;
+            transition: transform 0.2s ease, box-shadow 0.2s ease; min-height: 132px;
+        }
+        .widget-stat-card:hover { transform: translateY(-4px); box-shadow: 0 16px 35px rgba(15, 23, 42, 0.08); }
         .widget-info-title { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin: 0; }
         .widget-info-value { font-size: 28px; font-weight: 800; color: var(--text-dark); margin: 6px 0 0 0; }
         .widget-icon-box { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
         
         /* COLOR UTILS FOR WIDGET */
-        .icon-blue { background: rgba(59, 130, 246, 0.08); color: #3b82f6; }
-        .icon-purple { background: rgba(147, 51, 234, 0.08); color: #9333ea; }
-        .icon-orange { background: rgba(249, 115, 22, 0.08); color: #f97316; }
-        .icon-teal { background: rgba(20, 184, 166, 0.08); color: #14b8a6; }
+        .icon-blue { background: linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(59, 130, 246, 0.05)); color: #3b82f6; }
+        .icon-purple { background: linear-gradient(135deg, rgba(147, 51, 234, 0.14), rgba(147, 51, 234, 0.05)); color: #9333ea; }
+        .icon-orange { background: linear-gradient(135deg, rgba(249, 115, 22, 0.14), rgba(249, 115, 22, 0.05)); color: #f97316; }
+        .icon-teal { background: linear-gradient(135deg, rgba(20, 184, 166, 0.14), rgba(20, 184, 166, 0.05)); color: #14b8a6; }
 
-        .data-card-premium { background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: var(--card-shadow); overflow: hidden; }
-        .data-card-header { padding: 24px; background: #ffffff; border-bottom: 1px solid #f1f5f9; }
+        .data-card-premium { background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05); overflow: hidden; }
+        .data-card-header { padding: 22px 24px; background: linear-gradient(90deg, #f8fafc 0%, #ffffff 100%); border-bottom: 1px solid #f1f5f9; }
         .data-card-title { font-size: 16px; font-weight: 700; color: var(--text-dark); margin: 0; }
 
         .progress-stall { height: 10px; border-radius: 20px; background-color: #f1f5f9; overflow: hidden; }
@@ -117,12 +139,27 @@ function safe_text($value) {
     <?php include '../includes/sidebar.php'; ?>
 
     <div class="main-canvas">
-        <div class="mb-5">
-            <h3 class="fw-bold text-dark m-0">Selamat Datang, Administrator 👋</h3>
-            <p class="text-muted small m-0 mt-1">Berikut adalah ringkasan operasional dan data master bengkel SIBEO hari ini.</p>
+        <div class="hero-banner mb-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-4">
+                <div>
+                    <span class="hero-chip"><i class="bi bi-stars"></i> Ringkasan Hari Ini</span>
+                    <h3 class="fw-bold text-white m-0 mt-3">Selamat Datang, Administrator 👋</h3>
+                    <p class="text-light small m-0 mt-2" style="max-width: 650px; line-height: 1.7; opacity: 0.9;">
+                        Pantau performa operasional, status stall, dan aktivitas pelanggan dalam satu tampilan yang lebih informatif dan modern.
+                    </p>
+                </div>
+                <div class="hero-side-card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small fw-semibold" style="opacity: 0.9;">Status Sistem</span>
+                        <span class="badge bg-white text-primary px-2 py-1">Aktif</span>
+                    </div>
+                    <div class="small" style="opacity: 0.92;">Pelanggan terdaftar: <strong><?= $total_pelanggan; ?></strong></div>
+                    <div class="small mt-1" style="opacity: 0.92;">Stall tersedia: <strong><?= $stall_tersedia; ?></strong></div>
+                </div>
+            </div>
         </div>
 
-        <div class="row g-4 mb-5">
+        <div class="row g-4 mb-4">
             <div class="col-12 col-sm-6 col-xl-3">
                 <div class="widget-stat-card">
                     <div>
@@ -170,16 +207,16 @@ function safe_text($value) {
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="col-12 col-sm-6 col-xl-4">
-            <div class="widget-stat-card border-danger border-opacity-25">
-                <div>
-                    <p class="widget-info-title text-danger">Modal/Belanja (Bulan Ini)</p>
-                    <h3 class="widget-info-value fs-4 text-danger">Rp <?= number_format($pengeluaran_bulan_ini, 0, ',', '.'); ?></h3>
-                </div>
-                <div class="widget-icon-box bg-danger-subtle text-danger">
-                    <i class="bi bi-cart-check-fill"></i>
+            <div class="col-12 col-lg-4">
+                <div class="widget-stat-card border-danger border-opacity-25" style="border: 1px solid rgba(239, 68, 68, 0.18) !important;">
+                    <div>
+                        <p class="widget-info-title text-danger">Modal/Belanja (Bulan Ini)</p>
+                        <h3 class="widget-info-value fs-4 text-danger">Rp <?= number_format($pengeluaran_bulan_ini, 0, ',', '.'); ?></h3>
+                    </div>
+                    <div class="widget-icon-box bg-danger-subtle text-danger">
+                        <i class="bi bi-cart-check-fill"></i>
+                    </div>
                 </div>
             </div>
         </div>

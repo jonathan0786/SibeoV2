@@ -181,7 +181,7 @@ if ($res_kendaraan) {
                             <th>Pelanggan</th>
                             <th>Paket Layanan</th>
                             <th>Mekanik & Stall</th>
-                            <th>Total (UDF)</th>
+                            <th>Total Paket</th>
                             <th>Status Kerja</th>
                             <th class="text-center">Aksi Kendali Admin</th>
                         </tr>
@@ -193,7 +193,7 @@ if ($res_kendaraan) {
                             SELECT b.*, p.nama_lengkap, pk.nama_paket, pk.harga AS harga_paket, 
                                    IFNULL(m.$kolom_mekanik, '-') AS nama_mekanik, 
                                    IFNULL(s.nomor_stall, '-') AS nomor_stall,
-                                   udf_hitung_total(b.id_booking) AS total_akhir
+                                   COALESCE(pk.harga, 0) AS total_akhir
                             FROM tbl_booking b
                             LEFT JOIN tbl_pelanggan p ON b.id_pelanggan = p.id_pelanggan
                             LEFT JOIN tbl_paket_layanan pk ON b.id_paket = pk.id_paket

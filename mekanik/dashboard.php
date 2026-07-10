@@ -86,29 +86,34 @@ $tugas_selesai = $query_selesai ? mysqli_num_rows($query_selesai) : 0;
            2. CSS KHUSUS KONTEN MEKANIK (TIDAK BERUBAH)
            ========================================================= */
         .welcome-banner-premium {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border-radius: 20px; color: white; padding: 30px;
-            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15); position: relative; overflow: hidden;
+            position: relative; overflow: hidden; border-radius: 24px; color: white; padding: 30px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 45%, #2563eb 100%);
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.16);
         }
         .welcome-banner-premium::before {
-            content: ''; position: absolute; top: -30px; right: -30px; width: 140px; height: 140px;
-            background: rgba(56, 189, 248, 0.07); border-radius: 50%;
+            content: ''; position: absolute; top: -30px; right: -30px; width: 160px; height: 160px;
+            background: rgba(255,255,255,0.08); border-radius: 50%;
         }
         .profile-avatar-circle {
-            width: 56px; height: 56px; background: rgba(56, 189, 248, 0.15); 
+            width: 58px; height: 58px; background: rgba(56, 189, 248, 0.16); 
             border: 1.5px solid rgba(56, 189, 248, 0.4); border-radius: 50%; 
             display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 22px;
         }
+        .banner-pill {
+            display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px;
+            background: rgba(255,255,255,0.14); color: #dbeafe; border-radius: 999px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+        }
         
         .stat-card-premium {
-            background: white; border-radius: 20px; border: none; padding: 24px; height: 100%;
-            box-shadow: 0 4px 18px rgba(148, 163, 184, 0.06); display: flex; flex-direction: column;
+            background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%); border-radius: 20px; border: none; padding: 24px; height: 100%;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05); display: flex; flex-direction: column;
             justify-content: space-between; transition: transform 0.2s ease, box-shadow 0.2s ease; text-decoration: none;
         }
-        .stat-card-premium:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(148, 163, 184, 0.12); }
-        .stat-icon-box { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .stat-card-premium:hover { transform: translateY(-4px); box-shadow: 0 16px 35px rgba(15, 23, 42, 0.08); }
+        .stat-icon-box { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
         
-        .table-premium { background: white; border-radius: 20px; box-shadow: 0 4px 18px rgba(148, 163, 184, 0.06); padding: 24px; }
+        .table-premium { background: white; border-radius: 20px; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05); padding: 24px; }
         .table-premium thead th { background-color: #f8fafc; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 14px 16px; border-bottom: none; }
         .table-premium tbody td { padding: 16px 16px; border-bottom: 1px solid #f1f5f9; color: #475569; font-size: 13.5px; }
     </style>
@@ -120,17 +125,24 @@ $tugas_selesai = $query_selesai ? mysqli_num_rows($query_selesai) : 0;
 
     <div class="main-canvas">
         
-        <div class="welcome-banner-premium d-flex align-items-center gap-4 mb-4">
-            <div class="profile-avatar-circle flex-shrink-0 d-none d-sm-flex">
-                <i class="fa-solid fa-user-gear"></i>
+        <div class="welcome-banner-premium d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-4 mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <div class="profile-avatar-circle flex-shrink-0 d-none d-sm-flex">
+                    <i class="fa-solid fa-user-gear"></i>
+                </div>
+                <div>
+                    <span class="banner-pill"><i class="fa-solid fa-sparkles"></i> Dashboard Mekanik</span>
+                    <h4 class="fw-bold m-0 mt-3 text-white">Selamat Datang Kembali, <?= htmlspecialchars($data_mekanik['nama']); ?>!</h4>
+                    <p class="small m-0 mt-2" style="color: #cbd5e1; font-size: 13px; line-height: 1.7;">
+                        Status Kepegawaian: <span class="badge bg-white bg-opacity-20 text-primary px-2 py-0.5 fw-bold text-uppercase" style="font-size: 10px;"><?= htmlspecialchars($data_mekanik['kepegawaian']); ?></span> <br class="d-block d-sm-none">
+                        Spesialisasi Tim: <span class="text-light fw-semibold"><?= htmlspecialchars($data_mekanik['spesialisasi']); ?></span> &nbsp;|&nbsp; 
+                        Jadwal Shift: <span class="text-light fw-semibold"><?= htmlspecialchars($data_mekanik['shift']); ?></span>
+                    </p>
+                </div>
             </div>
-            <div>
-                <h4 class="fw-bold m-0 text-white">Selamat Datang Kembali, <?= htmlspecialchars($data_mekanik['nama']); ?>!</h4>
-                <p class="small m-0 mt-2" style="color: #94a3b8; font-size: 13px; line-height: 1.6;">
-                    Status Kepegawaian: <span class="badge bg-white bg-opacity-20 text-primary px-2 py-0.5 fw-bold text-uppercase" style="font-size: 10px;"><?= htmlspecialchars($data_mekanik['kepegawaian']); ?></span> <br class="d-block d-sm-none">
-                    Spesialisasi Tim: <span class="text-light fw-semibold"><?= htmlspecialchars($data_mekanik['spesialisasi']); ?></span> &nbsp;|&nbsp; 
-                    Jadwal Shift: <span class="text-light fw-semibold"><?= htmlspecialchars($data_mekanik['shift']); ?></span>
-                </p>
+            <div class="text-white small fw-semibold" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); border-radius: 16px; padding: 14px 16px; min-width: 220px;">
+                <div class="d-flex justify-content-between mb-2"><span>Task Aktif</span><strong><?= $tugas_proses; ?></strong></div>
+                <div class="d-flex justify-content-between"><span>Task Selesai</span><strong><?= $tugas_selesai; ?></strong></div>
             </div>
         </div>
 
