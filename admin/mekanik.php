@@ -11,14 +11,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
 // 1. PROSES TAMBAH DATA MEKANIK
 if (isset($_POST['action_tambah'])) {
     $nama         = mysqli_real_escape_string($koneksi, $_POST['nama']);
-    $kepegawaian  = mysqli_real_escape_string($koneksi, $_POST['kepegawaian']); // Diisi NIM
+    $nim          = mysqli_real_escape_string($koneksi, $_POST['nim']); 
     $spesialisasi = mysqli_real_escape_string($koneksi, $_POST['spesialisasi']);
     $shift        = mysqli_real_escape_string($koneksi, $_POST['shift']);
     $username     = mysqli_real_escape_string($koneksi, $_POST['username']);
     $password     = mysqli_real_escape_string($koneksi, $_POST['password']);
     
-    $query_add = mysqli_query($koneksi, "INSERT INTO tbl_mekanik (nama, kepegawaian, spesialisasi, shift, username, password) 
-                                         VALUES ('$nama', '$kepegawaian', '$spesialisasi', '$shift', '$username', '$password')");
+    $query_add = mysqli_query($koneksi, "INSERT INTO tbl_mekanik (nama, nim, spesialisasi, shift, username, password) 
+                                         VALUES ('$nama', '$nim', '$spesialisasi', '$shift', '$username', '$password')");
     if ($query_add) {
         echo "<script>alert('Data mekanik baru berhasil ditambahkan!'); window.location='mekanik.php';</script>";
     } else {
@@ -30,13 +30,13 @@ if (isset($_POST['action_tambah'])) {
 if (isset($_POST['action_edit'])) {
     $id_m         = mysqli_real_escape_string($koneksi, $_POST['id_mekanik']);
     $nama         = mysqli_real_escape_string($koneksi, $_POST['nama']);
-    $kepegawaian  = mysqli_real_escape_string($koneksi, $_POST['kepegawaian']); // Diisi NIM
+    $nim          = mysqli_real_escape_string($koneksi, $_POST['nim']); 
     $spesialisasi = mysqli_real_escape_string($koneksi, $_POST['spesialisasi']);
     $shift        = mysqli_real_escape_string($koneksi, $_POST['shift']);
     $username     = mysqli_real_escape_string($koneksi, $_POST['username']);
     $password     = mysqli_real_escape_string($koneksi, $_POST['password']);
     
-    $query_up = mysqli_query($koneksi, "UPDATE tbl_mekanik SET nama='$nama', kepegawaian='$kepegawaian', spesialisasi='$spesialisasi', shift='$shift', username='$username', password='$password' WHERE id_mekanik='$id_m'");
+    $query_up = mysqli_query($koneksi, "UPDATE tbl_mekanik SET nama='$nama', nim='$nim', spesialisasi='$spesialisasi', shift='$shift', username='$username', password='$password' WHERE id_mekanik='$id_m'");
     if ($query_up) {
         echo "<script>alert('Data mekanik berhasil diperbarui!'); window.location='mekanik.php';</script>";
     } else {
@@ -152,7 +152,7 @@ function safe_text($value) {
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h3 class="fw-bold text-dark m-0">Data Teknisi Mekanik</h3>
-                    <p class="text-muted small m-0 mt-1">Kelola data kepegawaian staf mekanik bengkel SIBEO.</p>
+                    <p class="text-muted small m-0 mt-1">Kelola data nim staf mekanik bengkel SIBEO.</p>
                 </div>
                 <button type="button" class="btn btn-premium-primary" data-bs-toggle="modal" data-bs-target="#modalTambah">
                     <i class="bi bi-person-gear"></i>Tambah Mekanik
@@ -169,7 +169,7 @@ function safe_text($value) {
                         <tr>
                             <th style="width: 60px;" class="text-center">No</th>
                             <th>Nama Mekanik</th>
-                            <th>NIM (Kepegawaian)</th>
+                            <th>NIM (nim)</th>
                             <th>Spesialisasi Keahlian</th>
                             <th>Shift Kerja</th>
                             <th>Username</th>
@@ -188,7 +188,7 @@ function safe_text($value) {
                                 <tr>
                                     <td class="text-center text-secondary fw-semibold"><?= $no++; ?></td>
                                     <td><strong class="text-dark"><?= safe_text($data['nama']); ?></strong></td>
-                                    <td><span class="badge bg-light text-dark border border-secondary-subtle px-2 py-1 fw-bold"><?= safe_text($data['kepegawaian']); ?></span></td>
+                                    <td><span class="badge bg-light text-dark border border-secondary-subtle px-2 py-1 fw-bold"><?= safe_text($data['nim']); ?></span></td>
                                     <td><span class="text-secondary fw-medium"><i class="bi bi-star-fill text-warning me-1"></i><?= safe_text($data['spesialisasi']); ?></span></td>
                                     <td>
                                         <span class="badge <?= $data['shift']=='pagi'?'bg-info-subtle text-info':'bg-dark-subtle text-dark' ?> px-2 py-1 text-uppercase small">
@@ -203,7 +203,7 @@ function safe_text($value) {
                                                     class="btn btn-sm btn-light text-primary fw-bold px-2 btn-edit-trigger"
                                                     data-id="<?= $data['id_mekanik']; ?>"
                                                     data-nama="<?= safe_text($data['nama']); ?>"
-                                                    data-nim="<?= safe_text($data['kepegawaian']); ?>"
+                                                    data-nim="<?= safe_text($data['nim']); ?>"
                                                     data-spesialisasi="<?= safe_text($data['spesialisasi']); ?>"
                                                     data-shift="<?= safe_text($data['shift']); ?>"
                                                     data-user="<?= safe_text($data['username']); ?>"
@@ -249,7 +249,7 @@ function safe_text($value) {
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-secondary">NIM (Nomor Induk Mahasiswa/Pegawai)</label>
-                        <input type="text" name="kepegawaian" class="form-control" placeholder="Masukkan NIM staf" required>
+                        <input type="text" name="nim" class="form-control" placeholder="Masukkan NIM staf" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-secondary">Spesialisasi Keahlian</label>
@@ -305,7 +305,7 @@ function safe_text($value) {
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-secondary">NIM (Nomor Induk Mahasiswa/Pegawai)</label>
-                        <input type="text" name="kepegawaian" id="edit_nim" class="form-control" required>
+                        <input type="text" name="nim" id="edit_nim" class="form-control" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-secondary">Spesialisasi Keahlian</label>

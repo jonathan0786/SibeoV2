@@ -28,11 +28,13 @@ if (isset($_POST['action_tambah'])) {
     $nama     = mysqli_real_escape_string($koneksi, $_POST['nama_lengkap']);
     $nik      = mysqli_real_escape_string($koneksi, $_POST['nik']);
     $telp     = mysqli_real_escape_string($koneksi, $_POST['no_telepon']);
+    $email    = mysqli_real_escape_string($koneksi, $_POST['email']);
+    $alamat   = mysqli_real_escape_string($koneksi, $_POST['alamat']);
     $password = mysqli_real_escape_string($koneksi, $_POST['password']);
     
     // Status default diset 'aktif' sesuai screenshot database
-    $query_add = mysqli_query($koneksi, "INSERT INTO tbl_pelanggan (nomor_pelanggan, nama_lengkap, nik, no_telepon, password, status) 
-                                         VALUES ('$no_cust', '$nama', '$nik', '$telp', '$password', 'aktif')");
+    $query_add = mysqli_query($koneksi, "INSERT INTO tbl_pelanggan (nomor_pelanggan, nama_lengkap, nik, no_telepon,email, alamat, email, alamat, password, status) 
+                                         VALUES ('$no_cust', '$nama', '$nik', '$telp', '$email', '$alamat', '$email', '$alamat', '$password', 'aktif')");
     if ($query_add) {
         echo "<script>alert('Data pelanggan baru berhasil disimpan!'); window.location='pelanggan.php';</script>";
     } else {
@@ -46,9 +48,11 @@ if (isset($_POST['action_edit'])) {
     $nama     = mysqli_real_escape_string($koneksi, $_POST['nama_lengkap']);
     $nik      = mysqli_real_escape_string($koneksi, $_POST['nik']);
     $telp     = mysqli_real_escape_string($koneksi, $_POST['no_telepon']);
+    $email    = mysqli_real_escape_string($koneksi, $_POST['email']);
+    $alamat   = mysqli_real_escape_string($koneksi, $_POST['alamat']);
     $password = mysqli_real_escape_string($koneksi, $_POST['password']);
     
-    $query_up = mysqli_query($koneksi, "UPDATE tbl_pelanggan SET nama_lengkap='$nama', nik='$nik', no_telepon='$telp', password='$password' WHERE id_pelanggan='$id_p'");
+    $query_up = mysqli_query($koneksi, "UPDATE tbl_pelanggan SET nama_lengkap='$nama', nik='$nik', no_telepon='$telp', email='$email', alamat='$alamat', password='$password' WHERE id_pelanggan='$id_p'");
     if ($query_up) {
         echo "<script>alert('Data pelanggan berhasil diubah!'); window.location='pelanggan.php';</script>";
     } else {
@@ -139,8 +143,10 @@ function safe_text($value) {
         .modal-header { border-bottom: 1px solid #f1f5f9; padding: 20px 24px; }
         .modal-body { padding: 24px; }
         .modal-footer { border-top: 1px solid #f1f5f9; padding: 16px 24px; }
-        .form-control { border-radius: 10px; padding: 10.5px 14px; border: 1px solid #cbd5e1; font-size: 14px; }
-        .form-control:focus { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); border-color: var(--sidebar-active); }
+        .modal-body .form-label { margin-bottom: 6px; color: #475569; font-size: 12px; }
+        .modal-body .form-control { border-radius: 10px; padding: 10.5px 14px; border: 1px solid #cbd5e1; font-size: 14px; }
+        .modal-body .form-control:focus { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); border-color: var(--sidebar-active); }
+        .modal-body .form-control[readonly] { background-color: #f8fafc; color: #1d4ed8; }
     </style>
 </head>
 <body>
@@ -201,6 +207,8 @@ function safe_text($value) {
                                                     data-nama="<?= safe_text($data['nama_lengkap']); ?>"
                                                     data-nik="<?= safe_text($data['nik']); ?>"
                                                     data-telp="<?= safe_text($data['no_telepon']); ?>"
+                                                    data-email="<?= safe_text($data['email']); ?>"
+                                                    data-alamat="<?= safe_text($data['alamat']); ?>"
                                                     data-pass="<?= safe_text($data['password']); ?>"
                                                     data-bs-toggle="modal" 
                                                     data-bs-target="#modalEdit">
@@ -252,10 +260,19 @@ function safe_text($value) {
                         <label class="form-label small fw-bold text-secondary">Nomor Telepon</label>
                         <input type="text" name="no_telepon" class="form-control" placeholder="Contoh: 0812345678" required>
                     </div>
-                    <div class="mb-0">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Email</label>
+                        <input type="email" name="email" class="form-control" placeholder="Masukkan email pelanggan" required>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label small fw-bold text-secondary">Password Akun</label>
                         <input type="text" name="password" class="form-control" placeholder="Masukkan password masuk" required>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Alamat</label>
+                        <input type="text" name="alamat" class="form-control" placeholder="Masukkan alamat pelanggan" required>
+                    </div>
+                    
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light fw-semibold px-4" style="border-radius:10px;" data-bs-dismiss="modal">Batal</button>
@@ -276,25 +293,35 @@ function safe_text($value) {
             <form action="pelanggan.php" method="POST">
                 <input type="hidden" name="id_pelanggan" id="edit_id">
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-secondary">Nomor Pelanggan</label>
-                        <input type="text" id="edit_nopel" class="form-control bg-light fw-bold text-muted" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-secondary">Nama Lengkap</label>
-                        <input type="text" name="nama_lengkap" id="edit_nama" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-secondary">NIM / NPK / NIK</label>
-                        <input type="text" name="nik" id="edit_nik" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-secondary">Nomor Telepon</label>
-                        <input type="text" name="no_telepon" id="edit_telp" class="form-control" required>
-                    </div>
-                    <div class="mb-0">
-                        <label class="form-label small fw-bold text-secondary">Password Akun</label>
-                        <input type="text" name="password" id="edit_pass" class="form-control" required>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-secondary">Nomor Pelanggan</label>
+                            <input type="text" id="edit_nopel" class="form-control" readonly>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-secondary">Nama Lengkap</label>
+                            <input type="text" name="nama_lengkap" id="edit_nama" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-secondary">NIM / NPK / NIK</label>
+                            <input type="text" name="nik" id="edit_nik" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-secondary">Nomor Telepon</label>
+                            <input type="text" name="no_telepon" id="edit_telp" class="form-control" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-secondary">Email</label>
+                            <input type="email" name="email" id="edit_email" class="form-control" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-secondary">Alamat</label>
+                            <input type="text" name="alamat" id="edit_alamat" class="form-control" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-secondary">Password Akun</label>
+                            <input type="text" name="password" id="edit_pass" class="form-control" required>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -317,6 +344,8 @@ function safe_text($value) {
             document.getElementById('edit_nama').value = this.getAttribute('data-nama');
             document.getElementById('edit_nik').value = this.getAttribute('data-nik');
             document.getElementById('edit_telp').value = this.getAttribute('data-telp');
+            document.getElementById('edit_email').value = this.getAttribute('data-email');
+            document.getElementById('edit_alamat').value = this.getAttribute('data-alamat');
             document.getElementById('edit_pass').value = this.getAttribute('data-pass');
         });
     });
