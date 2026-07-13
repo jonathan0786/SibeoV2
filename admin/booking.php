@@ -118,14 +118,15 @@ if ($res_kendaraan) {
             padding: 30px 20px; box-shadow: 10px 0 30px rgba(15, 23, 42, 0.05);
             position: sticky; top: 0; height: 100vh;
         }
-        .brand-section { padding: 0 12px 25px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-        .brand-title { font-size: 24px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 10px; }
+        .brand-section { padding: 0 12px 25px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; }
+        .brand-title { font-size: 24px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; }
         .brand-title span { color: var(--sidebar-active); }
         .brand-subtitle { font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
 
-        .menu-container { overflow-y: auto; flex-grow: 1; margin-top: 20px; }
-        .menu-container::-webkit-scrollbar { width: 4px; }
-        .menu-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        .menu-container { overflow-y: auto; flex-grow: 1; padding-right: 8px; margin-top: 20px; }
+        .menu-container::-webkit-scrollbar { width: 5px; }
+        .menu-container::-webkit-scrollbar-track { background: transparent; }
+        .menu-container::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
 
         .section-header { font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; padding: 20px 12px 8px 12px; }
         .sidebar-panel .nav-link { color: var(--sidebar-color); font-size: 14px; font-weight: 500; padding: 12px 16px; display: flex; align-items: center; text-decoration: none; border-radius: 12px; margin-bottom: 4px; transition: all 0.2s ease; }
@@ -133,8 +134,8 @@ if ($res_kendaraan) {
         .sidebar-panel .nav-link:hover { color: #ffffff; background: rgba(255, 255, 255, 0.04); }
         .sidebar-panel .nav-link.active { background: var(--sidebar-active); color: #ffffff; font-weight: 600; box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.35); }
 
-        .logout-box { padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); }
-        .logout-btn { color: #f87171 !important; font-weight: 600 !important; background: rgba(239, 68, 68, 0.05); border-radius: 12px; }
+        .logout-box { padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; }
+        .logout-btn { color: #f87171 !important; font-weight: 600 !important; background: rgba(239, 68, 68, 0.05); }
         .logout-btn:hover { background: #ef4444 !important; color: #ffffff !important; }
         
         /* MAIN CANVAS SCREEN */
@@ -307,6 +308,7 @@ if ($res_kendaraan) {
                 </table>
             </div>
         </div>
+        <?php include '../includes/footer.php'; ?>
     </div>
 </div>
 

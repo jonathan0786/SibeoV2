@@ -85,13 +85,13 @@ if (isset($_POST['login'])) {
             padding: 15px;
         }
         .login-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 24px;
-            padding: 40px 35px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 28px;
+            padding: 42px 36px;
+            box-shadow: 0 22px 44px rgba(0, 0, 0, 0.32);
         }
         .brand-logo {
             font-size: 28px;
@@ -103,31 +103,77 @@ if (isset($_POST['login'])) {
         }
         .form-label {
             color: #fff;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
             font-size: 13px;
             font-weight: 500;
             margin-bottom: 8px;
         }
         .form-control {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid #fff;
-            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 14px;
             color: #ffffff;
-            padding: 12px 16px;
-            font-size: 14px;
+            padding: 14px 16px;
+            font-size: 15px;
+            min-height: 50px;
             transition: all 0.3s ease;
         }
         .form-control:focus {
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(15, 23, 42, 0.85);
             border-color: #3b82f6;
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.14);
             color: #ffffff;
         }
         .form-control::placeholder {
-            color: rgba(255, 255, 255, 0.3) !important;
+            color: rgba(255, 255, 255, 0.4) !important;
             opacity: 1;
         }
         .form-label i {
             color: #38bdf8;
+            font-size: 13px;
+        }
+        .password-field {
+        position: relative;
+        width: 100%;
+        }
+        .password-field input {
+            padding-right: 52px;
+        }
+        .password-field .password-toggle {
+            position: absolute;
+            top: 50%;
+            right: 14px;
+            transform: translateY(-50%); /* Ini akan bekerja sempurna sekarang */
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 1.05rem;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+        .password-field .password-toggle:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .password-field .password-toggle:focus {
+            outline: none;
+            box-shadow: none;
+        }
+        .password-field .password-toggle:focus {
+            outline: none;
+            box-shadow: none;
+        }
+        .password-field .password-toggle:hover {
+            color: #ffffff;
         }
         .btn-submit {
             background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
@@ -181,21 +227,45 @@ if (isset($_POST['login'])) {
             </div>
             
             <div class="mb-4">
-                <label class="form-label"><i class="fa-solid fa-lock me-2"></i>Password</label>
-                <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+            
+            <label class="form-label"><i class="fa-solid fa-lock me-2"></i>Password</label>
+            
+            <div class="password-field">
+                <input id="password" type="password" name="password" class="form-control" placeholder="••••••••" required>
+                <button type="button" class="password-toggle" onclick="togglePassword()" aria-label="Tampilkan password">
+                    <i class="fa-solid fa-eye" id="togglePasswordIcon"></i>
+                </button>
             </div>
+        </div>
             
             <button type="submit" name="login" class="btn btn-submit w-100">
                 Masuk Sistem <i class="fa-solid fa-arrow-right ms-2"></i>
             </button>
-            <a href="../landingpage.php" class="d-block text-center mt-3 text-decoration-none text-secondary small" style="font-weight: 500;">
-                <i class="fa-solid fa-arrow-left me-2"></i>Kembali ke Beranda
-            </a>
+            <div class="text-center mt-3">
+                <a href="../landingpage.php" class="text-decoration-none text-secondary small" style="font-weight: 500;">
+                    <i class="fa-solid fa-arrow-left me-2"></i>Kembali ke Beranda
+                </a>
+            </div>
         </form>
 
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function togglePassword() {
+        const passwordInput = document.getElementById('password');
+        const icon = document.getElementById('togglePasswordIcon');
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+</script>
 </body>
 </html>

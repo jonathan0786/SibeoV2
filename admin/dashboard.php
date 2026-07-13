@@ -288,7 +288,9 @@ function safe_text($value) {
                 </div>
             </div>
         </div>
-
+            
+        <?php include '../includes/footer.php'; ?>
+        
     </div>
 </div>
 

@@ -117,7 +117,8 @@ function safe_text($value) {
         .logout-btn:hover { background: #ef4444 !important; color: #ffffff !important; }
         
         /* MAIN CANVAS */
-        .main-canvas { flex-grow: 1; padding: 40px 50px; max-width: calc(100% - 280px); }
+        .main-canvas { flex-grow: 1; display: flex; flex-direction: column; min-height: 100vh; padding: 40px 50px; max-width: calc(100% - 280px); }
+        .main-content { flex: 1; display: flex; flex-direction: column; gap: 24px; }
         .data-card-premium { background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: var(--card-shadow); overflow: hidden; }
         .data-card-header { padding: 24px; background: #ffffff; border-bottom: 1px solid #f1f5f9; }
         .data-card-title { font-size: 18px; font-weight: 700; color: var(--text-dark); margin: 0; }
@@ -142,15 +143,16 @@ function safe_text($value) {
     <?php include '../includes/sidebar.php'; ?>
 
     <div class="main-canvas">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h3 class="fw-bold text-dark m-0">Data Stall Pelayanan</h3>
-                <p class="text-muted small m-0 mt-1">Kelola pembagian lokasi atau antrean mekanik (Stall Kerja) bengkel SIBEO.</p>
+        <div class="main-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold text-dark m-0">Data Stall Pelayanan</h3>
+                    <p class="text-muted small m-0 mt-1">Kelola pembagian lokasi atau antrean mekanik (Stall Kerja) bengkel SIBEO.</p>
+                </div>
+                <button type="button" class="btn btn-premium-primary" data-bs-toggle="modal" data-bs-target="#modalTambah">
+                    <i class="bi bi-house-gear-fill"></i>Tambah Stall Baru
+                </button>
             </div>
-            <button type="button" class="btn btn-premium-primary" data-bs-toggle="modal" data-bs-target="#modalTambah">
-                <i class="bi bi-house-gear-fill"></i>Tambah Stall Baru
-            </button>
-        </div>
 
         <div class="data-card-premium">
             <div class="data-card-header">
@@ -219,12 +221,13 @@ function safe_text($value) {
                 </table>
             </div>
         </div>
+        </div>
+        <?php include '../includes/footer.php'; ?>
+        </div>
     </div>
 </div>
 
-<!-- ==========================================
-MODAL POP UP 1: TAMBAH DATA STALL
-========================================== -->
+<!-- tambah data stall -->
 <div class="modal fade" id="modalTambah" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">

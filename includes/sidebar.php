@@ -1,5 +1,4 @@
 <?php
-// includes/sidebar.php
 function getSidebarRole() {
     $sessionRole = strtolower(trim((string)($_SESSION['role'] ?? '')));
     $currentPath = str_replace('\\', '/', $_SERVER['PHP_SELF'] ?? '');
@@ -33,7 +32,7 @@ function isActive($p) {
 
 <div class="sidebar-panel" id="sidebarPanel">
     <div class="brand-section">
-        <div class="brand-title"><i class="bi bi-lightning-charge-fill"></i>SIBEO<span>.</span></div>
+        <div class="brand-title"></i>SIBEO<span>.</span></div>
         <div class="brand-subtitle"><?php echo strtoupper($role); ?> PANEL</div>
     </div>
 
