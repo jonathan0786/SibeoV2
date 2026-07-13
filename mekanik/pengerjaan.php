@@ -176,9 +176,18 @@ if (isset($_POST['update_pengerjaan'])) {
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-primary px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#modalUpdate<?= $r['id_pengerjaan']; ?>">
-                                        <i class="fa-solid fa-pen-to-square me-1"></i> Update
-                                    </button>
+                                    <?php 
+                                    if (strtolower($r['status']) !== 'selesai') { 
+                                    ?>
+                                        <button type="button" class="btn btn-outline-primary btn-sm px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#modalUpdate<?= $r['id_pengerjaan']; ?>">
+                                            <i class="bi bi-pencil-square"></i> Update
+                                        </button>
+                                        
+                                    <?php } else { ?>
+                                        
+                                        <span class="text-muted small fw-bold"><i class="bi bi-check2-all text-success fs-5"></i> Tuntas</span>
+                                        
+                                    <?php } ?>
                                 </td>
                             </tr>
 

@@ -15,12 +15,15 @@ $query_mekanik = mysqli_query($koneksi, "SELECT id_mekanik, nama, nim, spesialis
 $data_mekanik = mysqli_fetch_assoc($query_mekanik);
 
 // 3. HITUNG STATISTIK BERDASARKAN TBL_PENGERJAAN
-$query_proses = mysqli_query($koneksi, "SELECT id_pengerjaan FROM tbl_pengerjaan WHERE id_mekanik = '$id_mekanik' AND status IN ('Pending', 'Proses', 'Sedang Dikerjakan')");
+$query_proses = mysqli_query($koneksi, "SELECT id_pengerjaan FROM tbl_pengerjaan WHERE id_mekanik = '$id_mekanik' AND status IN ('Pending', 'Proses', 'Sedang Dikerjakan', 'dimulai')");
 $tugas_proses = $query_proses ? mysqli_num_rows($query_proses) : 0;
 
-// Hitung tugas selesai
 $query_selesai = mysqli_query($koneksi, "SELECT id_pengerjaan FROM tbl_pengerjaan WHERE id_mekanik = '$id_mekanik' AND status = 'Selesai'");
 $tugas_selesai = $query_selesai ? mysqli_num_rows($query_selesai) : 0;
+
+$query_total = mysqli_query($koneksi, "SELECT COUNT(*) AS total_tugas FROM tbl_pengerjaan WHERE id_mekanik = '$id_mekanik'");
+$data_total = mysqli_fetch_assoc($query_total);
+$total_tugas = (int)($data_total['total_tugas'] ?? 0);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -82,16 +85,13 @@ $tugas_selesai = $query_selesai ? mysqli_num_rows($query_selesai) : 0;
         /* MAIN CANVAS */
         .main-canvas { flex-grow: 1; padding: 40px 50px; max-width: calc(100% - 280px); }
 
-        /* =========================================================
-           2. CSS KHUSUS KONTEN MEKANIK (TIDAK BERUBAH)
-           ========================================================= */
         .welcome-banner-premium {
             position: relative; overflow: hidden; border-radius: 24px; color: white; padding: 30px;
             background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 45%, #2563eb 100%);
             box-shadow: 0 20px 45px rgba(15, 23, 42, 0.16);
         }
         .welcome-banner-premium::before {
-            content: ''; position: absolute; top: -30px; right: -30px; width: 160px; height: 160px;
+            content: ''; position: absolute; top: -30px; right: -30px; width: 180px; height: 180px;
             background: rgba(255,255,255,0.08); border-radius: 50%;
         }
         .profile-avatar-circle {
@@ -106,16 +106,18 @@ $tugas_selesai = $query_selesai ? mysqli_num_rows($query_selesai) : 0;
         }
         
         .stat-card-premium {
-            background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%); border-radius: 20px; border: none; padding: 24px; height: 100%;
+            background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%); border-radius: 20px; border: 1px solid #edf2f7; padding: 24px; height: 100%;
             box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05); display: flex; flex-direction: column;
             justify-content: space-between; transition: transform 0.2s ease, box-shadow 0.2s ease; text-decoration: none;
         }
         .stat-card-premium:hover { transform: translateY(-4px); box-shadow: 0 16px 35px rgba(15, 23, 42, 0.08); }
         .stat-icon-box { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
         
-        .table-premium { background: white; border-radius: 20px; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05); padding: 24px; }
+        .table-premium { background: white; border-radius: 24px; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05); padding: 24px; border: 1px solid #edf2f7; }
         .table-premium thead th { background-color: #f8fafc; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 14px 16px; border-bottom: none; }
         .table-premium tbody td { padding: 16px 16px; border-bottom: 1px solid #f1f5f9; color: #475569; font-size: 13.5px; }
+        .table-premium tbody tr:hover { background-color: #f8fbff; }
+        .empty-state { border: 1px dashed #cbd5e1; border-radius: 16px; background: #f8fafc; }
     </style>
 </head>
 <body>
@@ -134,55 +136,72 @@ $tugas_selesai = $query_selesai ? mysqli_num_rows($query_selesai) : 0;
                     <span class="banner-pill"><i class="fa-solid fa-sparkles"></i> Dashboard Mekanik</span>
                     <h4 class="fw-bold m-0 mt-3 text-white">Selamat Datang Kembali, <?= htmlspecialchars($data_mekanik['nama']); ?>!</h4>
                     <p class="small m-0 mt-2" style="color: #cbd5e1; font-size: 13px; line-height: 1.7;">
-                        Status Kepegawaian: <span class="badge bg-white bg-opacity-20 text-primary px-2 py-0.5 fw-bold text-uppercase" style="font-size: 10px;"><?= htmlspecialchars($data_mekanik['kepegawaian']); ?></span> <br class="d-block d-sm-none">
-                        Spesialisasi Tim: <span class="text-light fw-semibold"><?= htmlspecialchars($data_mekanik['spesialisasi']); ?></span> &nbsp;|&nbsp; 
+                        NIM: <span class="badge bg-white bg-opacity-20 text-primary px-2 py-0.5 fw-bold text-uppercase" style="font-size: 10px;"><?= htmlspecialchars($data_mekanik['nim']); ?></span> | <br class="d-block d-sm-none">
+                        Spesialisasi: <span class="text-light fw-semibold"><?= htmlspecialchars($data_mekanik['spesialisasi']); ?></span> &nbsp;|&nbsp; 
                         Jadwal Shift: <span class="text-light fw-semibold"><?= htmlspecialchars($data_mekanik['shift']); ?></span>
                     </p>
                 </div>
             </div>
             <div class="text-white small fw-semibold" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); border-radius: 16px; padding: 14px 16px; min-width: 220px;">
+                <div class="d-flex justify-content-between mb-2"><span>Total Tugas</span><strong><?= $total_tugas; ?></strong></div>
                 <div class="d-flex justify-content-between mb-2"><span>Task Aktif</span><strong><?= $tugas_proses; ?></strong></div>
                 <div class="d-flex justify-content-between"><span>Task Selesai</span><strong><?= $tugas_selesai; ?></strong></div>
             </div>
         </div>
 
-        <div class="row g-4 mb-5">
-            <div class="col-12 col-md-6">
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-md-4">
+                <a href="pengerjaan.php" class="stat-card-premium">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <span class="text-muted d-block fw-semibold text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Total Tugas</span>
+                            <h2 class="fw-extrabold m-0 mt-2 text-dark" style="font-size: 30px; font-weight: 800;"><?= $total_tugas; ?></h2>
+                        </div>
+                        <div class="stat-icon-box bg-primary bg-opacity-10 text-primary">
+                            <i class="fa-solid fa-list-check"></i>
+                        </div>
+                    </div>
+                    <span class="text-muted d-block" style="font-size: 11px;"><i class="fa-solid fa-arrow-right me-1"></i> Seluruh tugas yang ditugaskan kepada Anda</span>
+                </a>
+            </div>
+            <div class="col-12 col-md-4">
                 <a href="pengerjaan.php" class="stat-card-premium">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div>
                             <span class="text-muted d-block fw-semibold text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Tugas Aktif</span>
-                            <h2 class="fw-extrabold m-0 mt-2 text-dark" style="font-size: 36px; font-weight: 800;"><?= $tugas_proses; ?> <span style="font-size: 16px; font-weight: 500; color: #64748b;">Unit</span></h2>
+                            <h2 class="fw-extrabold m-0 mt-2 text-dark" style="font-size: 30px; font-weight: 800;"><?= $tugas_proses; ?></h2>
                         </div>
-                        <div class="stat-icon-box bg-primary bg-opacity-10 text-primary">
-                            <i class="fa-solid fa-spinner fa-spin"></i>
+                        <div class="stat-icon-box bg-warning bg-opacity-10 text-warning">
+                            <i class="fa-solid fa-spinner"></i>
                         </div>
                     </div>
                     <span class="text-muted d-block" style="font-size: 11px;"><i class="fa-solid fa-arrow-right me-1"></i> Sedang berjalan / antrean pengerjaan</span>
                 </a>
             </div>
-
-            <div class="col-12 col-md-6">
+            <div class="col-12 col-md-4">
                 <a href="pengerjaan.php" class="stat-card-premium">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div>
                             <span class="text-muted d-block fw-semibold text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">Tugas Selesai</span>
-                            <h2 class="fw-extrabold m-0 mt-2 text-success" style="font-size: 36px; font-weight: 800;"><?= $tugas_selesai; ?> <span style="font-size: 16px; font-weight: 500; color: #64748b;">Unit</span></h2>
+                            <h2 class="fw-extrabold m-0 mt-2 text-success" style="font-size: 30px; font-weight: 800;"><?= $tugas_selesai; ?></h2>
                         </div>
                         <div class="stat-icon-box bg-success bg-opacity-10 text-success">
                             <i class="fa-solid fa-circle-check"></i>
                         </div>
                     </div>
-                    <span class="text-muted d-block" style="font-size: 11px;"><i class="fa-solid fa-arrow-right me-1"></i> Selesai dikerjakan hari ini</span>
+                    <span class="text-muted d-block" style="font-size: 11px;"><i class="fa-solid fa-arrow-right me-1"></i> Selesai dikerjakan</span>
                 </a>
             </div>
         </div>
 
-        <div class="mb-3 d-flex justify-content-between align-items-center">
+        <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
                 <h5 class="fw-bold text-dark m-0">Aktivitas Pengerjaan Terbaru</h5>
                 <p class="text-muted small m-0">5 antrean kendaraan terbaru yang ditugaskan kepada Anda.</p>
             </div>
+            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-semibold">
+                <i class="fa-solid fa-clipboard-list me-1"></i> <?= $total_tugas; ?> data
+            </span>
         </div>
 
         <div class="table-premium">
@@ -208,7 +227,7 @@ $tugas_selesai = $query_selesai ? mysqli_num_rows($query_selesai) : 0;
                                                            ORDER BY p.id_pengerjaan DESC LIMIT 5");
 
                     if (!$query_tabel || mysqli_num_rows($query_tabel) == 0) {
-                        echo "<tr><td colspan='5' class='text-center text-muted py-4 small'>Belum ada riwayat aktivitas kerja terbaru yang tercatat.</td></tr>";
+                        echo "<tr><td colspan='5' class='text-center py-4'><div class='empty-state py-4 px-3 text-muted small'>Belum ada riwayat aktivitas kerja terbaru yang tercatat.</div></td></tr>";
                     } else {
                         while ($r = mysqli_fetch_assoc($query_tabel)) {
                             $status = $r['status'];
@@ -226,7 +245,7 @@ $tugas_selesai = $query_selesai ? mysqli_num_rows($query_selesai) : 0;
                                     <span class="fw-medium"><?= htmlspecialchars($r['nama_paket']); ?></span>
                                     <br><small class="text-muted" style="font-size: 11px;">Ket: <?= (!empty($r['keluhan'])) ? htmlspecialchars($r['keluhan']) : '-'; ?></small>
                                 </td>
-                                <td style="font-size: 13px;"><?= (!empty($r['waktu_mulai']) && $r['waktu_mulai'] != '0000-00-00 00:00:00') ? $r['waktu_mulai'] : '-'; ?></td>
+                                <td style="font-size: 13px;"><?= (!empty($r['waktu_mulai']) && $r['waktu_mulai'] != '0000-00-00 00:00:00') ? htmlspecialchars($r['waktu_mulai']) : '-'; ?></td>
                                 <td class="text-center">
                                     <span class="badge bg-opacity-10 <?= $badge_class; ?> px-2.5 py-1.5 rounded text-capitalize" style="font-size: 12px; font-weight: 600;"><?= $status; ?></span>
                                 </td>

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 07, 2026 at 03:01 AM
+-- Generation Time: Jul 13, 2026 at 05:12 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -235,7 +235,8 @@ INSERT INTO `tbl_booking` (`id_booking`, `kode_booking`, `id_pelanggan`, `id_ken
 (2, 'BK-20260630-001', 4, 3, 3, 1, 1, '2026-07-02', '07:00:00', '-', 'selesai', '2026-06-30 01:31:45'),
 (3, 'BK-20260703-001', 3, 4, 1, 1, NULL, '2026-07-13', '11:00:00', '-', 'selesai', '2026-07-03 13:33:01'),
 (4, 'BK-20260703-002', 3, 4, 3, 1, 4, '2026-07-04', '04:11:00', '', 'Dalam Pengerjaan', '2026-07-03 19:11:25'),
-(5, 'BK-20260704-001', 2, 1, 3, NULL, NULL, '2026-07-15', '09:10:00', '', 'selesai', '2026-07-04 07:19:31');
+(5, 'BK-20260704-001', 2, 1, 3, NULL, NULL, '2026-07-15', '09:10:00', '', 'selesai', '2026-07-04 07:19:31'),
+(7, 'BK-20260713-001', 11, 6, 1, 1, 1, '2026-07-21', '21:21:00', '', 'selesai', '2026-07-13 14:08:14');
 
 --
 -- Triggers `tbl_booking`
@@ -260,7 +261,7 @@ CREATE TABLE `tbl_kendaraan` (
   `id_pelanggan` int(11) NOT NULL,
   `nomor_polisi` varchar(12) NOT NULL,
   `merk` varchar(50) NOT NULL,
-  `tipe` varchar(50) NOT NULL,
+  `tipe` enum('Motor','Mobil') NOT NULL,
   `tahun_pembuatan` year(4) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -272,7 +273,9 @@ INSERT INTO `tbl_kendaraan` (`id_kendaraan`, `id_pelanggan`, `nomor_polisi`, `me
 (1, 2, 'B 1234 CDE', 'Honda Vario', 'Motor', '2010'),
 (2, 2, 'T 0987 EPE', 'Nissan GTR', 'Mobil', '1991'),
 (3, 4, 'B 4666 YAM', 'Honda Vario 160', 'Motor', '2025'),
-(4, 3, 'B 444 UUU', 'Honda Hrv', 'Mobil', '2018');
+(4, 3, 'B 444 UUU', 'Honda Hrv', 'Mobil', '2018'),
+(6, 11, 'A 365 SWU', 'Honda PCX', 'Motor', '2021'),
+(7, 11, 'F 654 FGD', 'Daihatsu Xenia', 'Mobil', '2022');
 
 -- --------------------------------------------------------
 
@@ -283,7 +286,7 @@ INSERT INTO `tbl_kendaraan` (`id_kendaraan`, `id_pelanggan`, `nomor_polisi`, `me
 CREATE TABLE `tbl_mekanik` (
   `id_mekanik` int(11) NOT NULL,
   `nama` varchar(100) NOT NULL,
-  `kepegawaian` varchar(20) NOT NULL,
+  `nim` varchar(20) NOT NULL,
   `spesialisasi` varchar(100) NOT NULL,
   `shift` enum('pagi','siang','malam') NOT NULL,
   `username` varchar(50) NOT NULL,
@@ -294,7 +297,7 @@ CREATE TABLE `tbl_mekanik` (
 -- Dumping data for table `tbl_mekanik`
 --
 
-INSERT INTO `tbl_mekanik` (`id_mekanik`, `nama`, `kepegawaian`, `spesialisasi`, `shift`, `username`, `password`) VALUES
+INSERT INTO `tbl_mekanik` (`id_mekanik`, `nama`, `nim`, `spesialisasi`, `shift`, `username`, `password`) VALUES
 (1, 'Mekanik1', 'MK-001', 'Mesin & Oli', 'pagi', 'mekanik', 'mekanik123'),
 (2, 'Yoga Noval', '0920250050', 'Kelistrikan', 'pagi', 'noval', 'noval123'),
 (4, 'Ferdy', '0920250036', 'Overhaul Engine', 'siang', 'ferdy', 'ferdy123');
@@ -345,11 +348,13 @@ CREATE TABLE `tbl_pelanggan` (
 --
 
 INSERT INTO `tbl_pelanggan` (`id_pelanggan`, `nomor_pelanggan`, `nama_lengkap`, `nik`, `no_telepon`, `email`, `alamat`, `password`, `status`, `created_at`) VALUES
-(2, 'CS-002', 'Rayyan Abdurrahman Qadar', '0920250049', '81210822482', '', '', 'customer2', 'aktif', '2026-06-18 00:18:35'),
-(3, 'CS-003', 'Daffa Hanif Muzaki', '0920250032', '81234567889', '', '', 'customer3', 'aktif', '2026-06-18 00:20:34'),
-(4, 'CS-004', 'Rasya Genteng', '0920250048', '8153163517', '', '', 'customer4', 'aktif', '2026-06-22 09:22:24'),
-(8, 'CS-005', 'Mazyan Ghiffani', '0920250040', '836748264927', '', '', '', 'aktif', '2026-06-30 04:05:54'),
-(10, 'CS-006', 'Jonathan', '0920250037', '081280123889', '', '', 'jo123', 'aktif', '2026-07-06 08:39:12');
+(2, 'CS-002', 'Rayyan Abdurrahman Qadar', '0920250049', '081210822482', 'rayyan@gmail.com', 'cilincing, jakarta utara', 'customer2', 'aktif', '2026-06-18 00:18:35'),
+(3, 'CS-003', 'Daffa Hanif Muzaki', '0920250032', '081234567889', '', '', 'customer3', 'aktif', '2026-06-18 00:20:34'),
+(4, 'CS-004', 'Rasya Genteng', '0920250048', '081531635178', '', '', 'customer4', 'aktif', '2026-06-22 09:22:24'),
+(8, 'CS-005', 'Mazyan Ghiffani', '0920250040', '086748264927', '', '', 'customer5', 'aktif', '2026-06-30 04:05:54'),
+(10, 'CS-006', 'Jonathan', '0920250037', '081324576809', '', '', 'jo123', 'aktif', '2026-07-06 08:39:12'),
+(11, 'CS-007', 'Ferdy', '0920250036', '089764394653', 'ferdi@gmail.com', 'Babelan, Kecamatan Bekasi, Jawa Barat', 'customer7', 'aktif', '2026-07-10 08:40:29'),
+(12, 'CS-008', 'okta', '0920250043', '089735593627', 'okta@gmail.com', 'Karawang, Jawa Timur', 'customer8', 'aktif', '2026-07-10 08:41:06');
 
 -- --------------------------------------------------------
 
@@ -375,7 +380,8 @@ CREATE TABLE `tbl_pembayaran` (
 --
 
 INSERT INTO `tbl_pembayaran` (`id_pembayaran`, `id_booking`, `nomor_nota`, `biaya_jasa`, `biaya_suku_cadang`, `total_tagihan`, `metode_pembayaran`, `status`, `tanggal_bayar`, `id_admin`) VALUES
-(2, 5, 'INV-20260704-937', 100000.00, 0.00, 100000.00, NULL, 'lunas', '2026-07-05 00:48:43', NULL);
+(2, 5, 'INV-20260704-937', 100000.00, 0.00, 100000.00, NULL, 'lunas', '2026-07-05 00:48:43', NULL),
+(3, 7, 'INV-20260713-3', 500000.00, 0.00, 500000.00, NULL, 'belum_bayar', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -458,7 +464,8 @@ CREATE TABLE `tbl_pengerjaan` (
 
 INSERT INTO `tbl_pengerjaan` (`id_pengerjaan`, `id_booking`, `id_mekanik`, `catatan_pemeriksaan`, `catatan_pengerjaan`, `status`, `waktu_mulai`, `waktu_selesai`) VALUES
 (1, 2, 1, NULL, NULL, 'selesai', '2026-07-03 20:38:09', '2026-07-03 20:38:13'),
-(2, 1, 2, NULL, NULL, 'selesai', '2026-07-03 20:38:16', '2026-07-03 20:38:19');
+(2, 1, 2, NULL, NULL, 'selesai', '2026-07-03 20:38:16', '2026-07-03 20:38:19'),
+(3, 7, 1, NULL, '', 'selesai', '2026-07-13 21:18:16', '2026-07-13 21:25:16');
 
 -- --------------------------------------------------------
 
@@ -672,13 +679,13 @@ ALTER TABLE `tbl_alat_kerja`
 -- AUTO_INCREMENT for table `tbl_booking`
 --
 ALTER TABLE `tbl_booking`
-  MODIFY `id_booking` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id_booking` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `tbl_kendaraan`
 --
 ALTER TABLE `tbl_kendaraan`
-  MODIFY `id_kendaraan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_kendaraan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `tbl_mekanik`
@@ -696,13 +703,13 @@ ALTER TABLE `tbl_paket_layanan`
 -- AUTO_INCREMENT for table `tbl_pelanggan`
 --
 ALTER TABLE `tbl_pelanggan`
-  MODIFY `id_pelanggan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id_pelanggan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `tbl_pembayaran`
 --
 ALTER TABLE `tbl_pembayaran`
-  MODIFY `id_pembayaran` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_pembayaran` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `tbl_peminjaman_alat`
@@ -720,7 +727,7 @@ ALTER TABLE `tbl_pengadaan`
 -- AUTO_INCREMENT for table `tbl_pengerjaan`
 --
 ALTER TABLE `tbl_pengerjaan`
-  MODIFY `id_pengerjaan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_pengerjaan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `tbl_pengerjaan_suku_cadang`
