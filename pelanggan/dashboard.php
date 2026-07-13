@@ -36,6 +36,7 @@ $biaya_res = mysqli_query($koneksi, "
 ");
 $data_biaya = mysqli_fetch_assoc($biaya_res);
 $total_pengeluaran = $data_biaya['total_pengeluaran'] ?? 0;
+$nama_pelanggan = htmlspecialchars($nama_pelanggan_login);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -122,7 +123,7 @@ $total_pengeluaran = $data_biaya['total_pengeluaran'] ?? 0;
             <div class="row align-items-center">
                 <div class="col-md-9" style="z-index: 2;">
                     <span class="badge bg-white text-primary px-3 py-1.5 mb-3 fw-bold small text-uppercase" style="letter-spacing: 0.5px;">Selamat Datang</span>
-                    <h2 class="fw-bold text-white mb-2">Halo, Semangat Beraktivitas!</h2>
+                    <h2 class="fw-bold text-white mb-2">Halo, <?= $nama_pelanggan; ?> Semangat Beraktivitas!</h2>
                     <p class="text-white-50 m-0" style="font-size: 14px; max-width: 600px;">Gunakan layanan pemantauan berkala untuk memastikan performa kendaraan Anda selalu dalam kondisi prima dan aman berkendara.</p>
                 </div>
             </div>

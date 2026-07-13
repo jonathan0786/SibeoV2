@@ -11,7 +11,7 @@ if (!isset($_SESSION['id']) || $_SESSION['role'] !== 'mekanik') {
 $id_mekanik = $_SESSION['id'];
 
 // 2. QUERY DETAIL MEKANIK
-$query_mekanik = mysqli_query($koneksi, "SELECT id_mekanik, nama, kepegawaian, spesialisasi, shift FROM tbl_mekanik WHERE id_mekanik = '$id_mekanik'");
+$query_mekanik = mysqli_query($koneksi, "SELECT id_mekanik, nama, nim, spesialisasi, shift FROM tbl_mekanik WHERE id_mekanik = '$id_mekanik'");
 $data_mekanik = mysqli_fetch_assoc($query_mekanik);
 
 // 3. HITUNG STATISTIK BERDASARKAN TBL_PENGERJAAN

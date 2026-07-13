@@ -410,5 +410,39 @@ function safe_text($value) {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function (button) {
+            button.addEventListener('click', function (e) {
+                var targetSelector = this.getAttribute('data-bs-target');
+                if (!targetSelector) return;
+
+                var targetPane = document.querySelector(targetSelector);
+                if (!targetPane) return;
+
+                var tabList = this.closest('[role="tablist"]');
+                if (tabList) {
+                    tabList.querySelectorAll('.nav-link').forEach(function (tab) {
+                        tab.classList.remove('active');
+                        tab.setAttribute('aria-selected', 'false');
+                    });
+                }
+
+                this.classList.add('active');
+                this.setAttribute('aria-selected', 'true');
+
+                var content = targetPane.closest('.tab-content');
+                if (content) {
+                    content.querySelectorAll('.tab-pane').forEach(function (pane) {
+                        pane.classList.remove('show', 'active');
+                    });
+                }
+
+                targetPane.classList.add('show', 'active');
+                e.preventDefault();
+            });
+        });
+    });
+</script>
 </body>
 </html>

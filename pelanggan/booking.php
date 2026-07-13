@@ -44,8 +44,10 @@ if (isset($_POST['proses_booking'])) {
 
     // Status otomatis awal adalah 'menunggu' sesuai alur sistem SIBEO
     // Memanggil Stored Procedure sp_tambah_booking
-    $sql_insert = "CALL sp_tambah_booking('$kode_booking_otomatis', '$id_pelanggan_login', '$id_kendaraan', '$id_paket', '$keluhan')";
-    
+$sql_insert = "INSERT INTO tbl_booking 
+                   (kode_booking, id_pelanggan, id_kendaraan, id_paket, tanggal_servis, jam_servis, keluhan, status) 
+                   VALUES 
+                   ('$kode_booking_otomatis', '$id_pelanggan_login', '$id_kendaraan', '$id_paket', '$tanggal', '$jam', '$keluhan', 'Menunggu')";    
     if (mysqli_query($koneksi, $sql_insert)) {
         echo "<script>alert('Booking berhasil diajukan!'); window.location='dashboard.php';</script>";
     } else {
@@ -143,24 +145,20 @@ if (isset($_POST['proses_booking'])) {
                         <select name="id_kendaraan" class="form-select-custom" required>
                             <option value="">-- Pilih Kendaraan --</option>
                             <?php
-                            // Mengambil data kendaraan milik pelanggan yang sedang login secara fleksibel
+                            // PERBAIKAN: Hanya mengambil kendaraan yang dimiliki oleh pelanggan login
                             $res_knd = mysqli_query($koneksi, "SELECT * FROM tbl_kendaraan WHERE id_pelanggan = '$id_pelanggan_login'");
-                            
-                            // JIKA HASIL KOSONG, KITA LOAD BACKUP UMUM AGAR SAAT TESTING TIDAK KOSONG MELOMPONG
-                            if (!$res_knd || mysqli_num_rows($res_knd) == 0) {
-                                $res_knd = mysqli_query($koneksi, "SELECT * FROM tbl_kendaraan LIMIT 5");
-                            }
 
+                            // Jika query berhasil dijalankan DAN jumlah kendaraannya lebih dari 0
                             if ($res_knd && mysqli_num_rows($res_knd) > 0) {
                                 while($k = mysqli_fetch_assoc($res_knd)) {
-                                    // Deteksi nama kolom plat & tipe kendaraan di database Anda
                                     $plat = $k['nomor_polisi'] ?? ($k['no_plat'] ?? 'Plat Aktif');
                                     $merk = $k['merk'] ?? ($k['nama_kendaraan'] ?? 'Unit');
                                     $tipe = $k['tipe'] ?? '';
                                     echo "<option value='".$k['id_kendaraan']."'>".$plat." - ".$merk." ".$tipe."</option>";
                                 }
                             } else {
-                                echo "<option value='' disabled>Belum ada data kendaraan di database</option>";
+                                // PERBAIKAN: Pesan khusus jika garasi kosong
+                                echo "<option value='' disabled>-- Garasi kosong, harap tambah kendaraan di menu Kendaraan terlebih dahulu --</option>";
                             }
                             ?>
                         </select>

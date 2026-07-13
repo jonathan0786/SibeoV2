@@ -292,7 +292,7 @@ if ($res_kendaraan) {
                                                     </div>
                                                 </div>
                                                 <div class="modal-footer">
-                                                    <button type="submit" name="action_confirmasi" class="btn btn-primary w-100 fw-bold" style="border-radius: 10px;">Kirim Tugas ke Mekanik</button>
+                                                    <button type="submit" name="action_konfirmasi" class="btn btn-primary w-100 fw-bold" style="border-radius: 10px;">Kirim Tugas ke Mekanik</button>
                                                 </div>
                                             </form>
                                         </div>

@@ -134,6 +134,10 @@ if (isset($_POST['login'])) {
             color: #38bdf8;
             font-size: 13px;
         }
+        input::-ms-reveal,
+        input::-ms-clear {
+            display: none;
+        }
         .password-field {
         position: relative;
         width: 100%;

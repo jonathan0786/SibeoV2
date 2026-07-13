@@ -18,21 +18,68 @@ if (isset($_SESSION['id']) && $_SESSION['role'] === 'pelanggan') {
 }
 
 // =========================================================================
-// PROSES TAMBAH KENDARAAN BARU
+// PROSES TAMBAH KENDARAAN BARU (DENGAN PROTEKSI ANTI-DUPLIKAT)
 // =========================================================================
 if (isset($_POST['tambah_kendaraan'])) {
-    $nomor_polisi     = mysqli_real_escape_string($koneksi, $_POST['nomor_polisi']);
+    $nomor_polisi     = mysqli_real_escape_string($koneksi, strtoupper($_POST['nomor_polisi']));
     $merk             = mysqli_real_escape_string($koneksi, $_POST['merk']);
     $tipe             = mysqli_real_escape_string($koneksi, $_POST['tipe']);
     $tahun_pembuatan  = mysqli_real_escape_string($koneksi, $_POST['tahun_pembuatan']);
 
-    $sql_insert = "INSERT INTO tbl_kendaraan (id_pelanggan, nomor_polisi, merk, tipe, tahun_pembuatan) 
-                   VALUES ('$id_pelanggan_login', '$nomor_polisi', '$merk', '$tipe', '$tahun_pembuatan')";
+    // 1. Cek apakah plat nomor sudah ada di database
+    $cek_plat = mysqli_query($koneksi, "SELECT nomor_polisi FROM tbl_kendaraan WHERE nomor_polisi = '$nomor_polisi'");
     
-    if (mysqli_query($koneksi, $sql_insert)) {
-        echo "<script>alert('Kendaraan berhasil ditambahkan!'); window.location='kendaraan.php';</script>";
+    if (mysqli_num_rows($cek_plat) > 0) {
+        echo "<script>alert('Gagal! Kendaraan dengan plat nomor $nomor_polisi sudah terdaftar.'); window.history.back();</script>";
+        exit(); // Hentikan proses jika duplikat
     } else {
-        echo "<script>alert('Gagal menambahkan kendaraan: " . mysqli_error($koneksi) . "');</script>";
+        // 2. Jika belum ada, proses simpan
+        $sql_insert = "INSERT INTO tbl_kendaraan (id_pelanggan, nomor_polisi, merk, tipe, tahun_pembuatan) 
+                       VALUES ('$id_pelanggan_login', '$nomor_polisi', '$merk', '$tipe', '$tahun_pembuatan')";
+        
+        if (mysqli_query($koneksi, $sql_insert)) {
+            echo "<script>alert('Kendaraan berhasil ditambahkan!'); window.location='kendaraan.php';</script>";
+            exit(); // Hentikan eksekusi script setelah berhasil
+        } else {
+            echo "<script>alert('Gagal menambahkan kendaraan: " . mysqli_error($koneksi) . "');</script>";
+            exit();
+        }
+    }
+}
+
+// =========================================================================
+// PROSES EDIT KENDARAAN
+// =========================================================================
+if (isset($_POST['edit_kendaraan'])) {
+    $id_kendaraan     = mysqli_real_escape_string($koneksi, $_POST['id_kendaraan']);
+    $nomor_polisi     = mysqli_real_escape_string($koneksi, strtoupper($_POST['nomor_polisi']));
+    $merk             = mysqli_real_escape_string($koneksi, $_POST['merk']);
+    $tipe             = mysqli_real_escape_string($koneksi, $_POST['tipe']);
+    $tahun_pembuatan  = mysqli_real_escape_string($koneksi, $_POST['tahun_pembuatan']);
+
+    $sql_update = "UPDATE tbl_kendaraan SET nomor_polisi='$nomor_polisi', merk='$merk', tipe='$tipe', tahun_pembuatan='$tahun_pembuatan' WHERE id_kendaraan='$id_kendaraan' AND id_pelanggan='$id_pelanggan_login'";
+    
+    if (mysqli_query($koneksi, $sql_update)) {
+        echo "<script>alert('Data kendaraan berhasil diperbarui!'); window.location='kendaraan.php';</script>";
+        exit();
+    } else {
+        echo "<script>alert('Gagal memperbarui kendaraan.');</script>";
+    }
+}
+
+// =========================================================================
+// PROSES HAPUS KENDARAAN
+// =========================================================================
+if (isset($_POST['hapus_kendaraan'])) {
+    $id_kendaraan = mysqli_real_escape_string($koneksi, $_POST['id_kendaraan']);
+    
+    $sql_delete = "DELETE FROM tbl_kendaraan WHERE id_kendaraan='$id_kendaraan' AND id_pelanggan='$id_pelanggan_login'";
+    
+    if (mysqli_query($koneksi, $sql_delete)) {
+        echo "<script>alert('Kendaraan berhasil dihapus!'); window.location='kendaraan.php';</script>";
+        exit();
+    } else {
+        echo "<script>alert('Gagal menghapus kendaraan. Mungkin data sedang terikat dengan booking servis.');</script>";
     }
 }
 ?>
@@ -59,7 +106,6 @@ if (isset($_POST['tambah_kendaraan'])) {
         body { background-color: var(--bg-body); color: #334155; overflow-x: hidden; }
         .layout-wrapper { display: flex; min-height: 100vh; }
         
-        /* SIDEBAR KONSISTEN SIBEO */
         .sidebar-panel { 
             width: 280px; background: var(--sidebar-bg); flex-shrink: 0; 
             display: flex; flex-direction: column; justify-content: space-between; 
@@ -81,10 +127,8 @@ if (isset($_POST['tambah_kendaraan'])) {
         .logout-box { padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); }
         .logout-btn { color: #f87171 !important; font-weight: 600 !important; background: rgba(239, 68, 68, 0.05); border-radius: 12px; }
         
-        /* MAIN CANVAS SCREEN */
         .main-canvas { flex-grow: 1; padding: 40px 50px; max-width: calc(100% - 280px); }
         
-        /* PREMIUM CARD & TABLE STYLE */
         .data-card { background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: var(--card-shadow); padding: 32px; }
         .card-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
         .card-header-title { font-size: 18px; font-weight: 700; color: var(--text-dark); display: flex; align-items: center; gap: 10px; margin: 0; }
@@ -100,6 +144,8 @@ if (isset($_POST['tambah_kendaraan'])) {
 
         .btn-add { background: #2563eb; color: #ffffff; font-weight: 600; font-size: 14px; border: none; border-radius: 10px; padding: 10px 20px; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s ease; }
         .btn-add:hover { background: #1d4ed8; box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2); }
+        
+        .btn-aksi { padding: 6px 12px; font-size: 13px; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -123,24 +169,23 @@ if (isset($_POST['tambah_kendaraan'])) {
                 <table class="table table-premium align-middle">
                     <thead>
                         <tr>
-                            <th style="width: 70px;">No</th>
+                            <th style="width: 50px;">No</th>
                             <th>Jenis</th>
                             <th>Nomor Plat / Polisi</th>
-                            <th>Merk & Tipe Kendaraan</th>
+                            <th>Merk Kendaraan</th>
                             <th>Tahun</th>
+                            <th class="text-center" style="width: 150px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php
                         $no = 1;
-                        // Query mengambil data kendaraan milik pelanggan yang sedang login
-                        $res_table = mysqli_query($koneksi, "SELECT id_kendaraan, nomor_polisi, merk, tipe, tahun_pembuatan FROM tbl_kendaraan WHERE id_pelanggan = '$id_pelanggan_login'");
+                        $res_table = mysqli_query($koneksi, "SELECT id_kendaraan, nomor_polisi, merk, tipe, tahun_pembuatan FROM tbl_kendaraan WHERE id_pelanggan = '$id_pelanggan_login' ORDER BY id_kendaraan DESC");
                         
                         if ($res_table && mysqli_num_rows($res_table) > 0) {
                             while($row = mysqli_fetch_assoc($res_table)) {
-                                // Menentukan badge berdasarkan kata kunci tipe kendaraan di database Anda
-                                $tipe_clean = strtolower($row['tipe']);
-                                if (strpos($tipe_clean, 'motor') !== false || strpos($tipe_clean, 'vario') !== false || strpos($tipe_clean, 'beat') !== false) {
+                                $tipe_enum = strtolower($row['tipe']);
+                                if ($tipe_enum === 'motor') {
                                     $jenis_badge = '<span class="badge-jenis badge-motor"><i class="bi bi-bicycle"></i> Motor</span>';
                                 } else {
                                     $jenis_badge = '<span class="badge-jenis badge-mobil"><i class="bi bi-car-front"></i> Mobil</span>';
@@ -150,13 +195,77 @@ if (isset($_POST['tambah_kendaraan'])) {
                                     <td><span class="text-muted fw-bold"><?= $no++; ?></span></td>
                                     <td><?= $jenis_badge; ?></td>
                                     <td><span class="badge-plat"><?= htmlspecialchars($row['nomor_polisi']); ?></span></td>
-                                    <td class="fw-semibold text-dark"><?= htmlspecialchars($row['merk'] . ' ' . $row['tipe']); ?></td>
+                                    <td class="fw-semibold text-dark"><?= htmlspecialchars($row['merk']); ?></td>
                                     <td class="text-secondary"><?= htmlspecialchars($row['tahun_pembuatan']); ?></td>
+                                    <td class="text-center">
+                                        <button class="btn btn-warning btn-sm btn-aksi text-white" data-bs-toggle="modal" data-bs-target="#modalEdit<?= $row['id_kendaraan']; ?>"><i class="bi bi-pencil-square"></i></button>
+                                        <button class="btn btn-danger btn-sm btn-aksi" data-bs-toggle="modal" data-bs-target="#modalHapus<?= $row['id_kendaraan']; ?>"><i class="bi bi-trash"></i></button>
+                                    </td>
                                 </tr>
+
+                                <!-- Modal Edit -->
+                                <div class="modal fade" id="modalEdit<?= $row['id_kendaraan']; ?>" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content" style="border-radius: 16px; border: none; overflow: hidden;">
+                                            <div class="modal-header bg-warning p-3">
+                                                <h6 class="modal-title fw-bold m-0 text-white"><i class="bi bi-pencil-square me-2"></i>Edit Data Kendaraan</h6>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <form action="" method="POST">
+                                                <div class="modal-body p-4">
+                                                    <input type="hidden" name="id_kendaraan" value="<?= $row['id_kendaraan']; ?>">
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold text-secondary">Nomor Polisi (Plat)</label>
+                                                        <input type="text" name="nomor_polisi" class="form-control text-uppercase" value="<?= $row['nomor_polisi']; ?>" required style="border-radius: 8px;">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold text-secondary">Merk & Model Kendaraan</label>
+                                                        <input type="text" name="merk" class="form-control" value="<?= $row['merk']; ?>" required style="border-radius: 8px;">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label small fw-bold text-secondary">Tipe Kendaraan</label>
+                                                        <select name="tipe" class="form-select" required style="border-radius: 8px;">
+                                                            <option value="Mobil" <?= ($row['tipe'] == 'Mobil') ? 'selected' : ''; ?>>Mobil</option>
+                                                            <option value="Motor" <?= ($row['tipe'] == 'Motor') ? 'selected' : ''; ?>>Motor</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-2">
+                                                        <label class="form-label small fw-bold text-secondary">Tahun Pembuatan</label>
+                                                        <input type="number" name="tahun_pembuatan" class="form-control" value="<?= $row['tahun_pembuatan']; ?>" required style="border-radius: 8px;">
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer bg-light p-3 border-0 text-end">
+                                                    <button type="button" class="btn btn-secondary btn-sm rounded-3 px-3" data-bs-dismiss="modal">Batal</button>
+                                                    <button type="submit" name="edit_kendaraan" class="btn btn-warning text-white btn-sm rounded-3 px-4 fw-semibold">Simpan Perubahan</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Modal Hapus -->
+                                <div class="modal fade" id="modalHapus<?= $row['id_kendaraan']; ?>" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered modal-sm">
+                                        <div class="modal-content" style="border-radius: 16px; border: none; overflow: hidden;">
+                                            <div class="modal-body p-4 text-center">
+                                                <i class="bi bi-exclamation-circle text-danger" style="font-size: 3rem;"></i>
+                                                <h6 class="mt-3 fw-bold">Hapus Kendaraan?</h6>
+                                                <p class="text-muted small">Anda yakin ingin menghapus <b><?= $row['nomor_polisi']; ?></b> dari garasi Anda? Tindakan ini tidak dapat dibatalkan.</p>
+                                                
+                                                <form action="" method="POST" class="mt-4">
+                                                    <input type="hidden" name="id_kendaraan" value="<?= $row['id_kendaraan']; ?>">
+                                                    <button type="button" class="btn btn-light btn-sm px-3 fw-semibold" data-bs-dismiss="modal">Batal</button>
+                                                    <button type="submit" name="hapus_kendaraan" class="btn btn-danger btn-sm px-4 fw-semibold">Ya, Hapus</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                         <?php
                             }
                         } else {
-                            echo "<tr><td colspan='5' class='text-center py-4 text-muted'>Belum ada kendaraan terdaftar di garasi Anda.</td></tr>";
+                            echo "<tr><td colspan='6' class='text-center py-4 text-muted'>Belum ada kendaraan terdaftar di garasi Anda.</td></tr>";
                         }
                         ?>
                     </tbody>
@@ -167,6 +276,7 @@ if (isset($_POST['tambah_kendaraan'])) {
     </div>
 </div>
 
+<!-- Modal Tambah -->
 <div class="modal fade" id="modalTambah" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 16px; border: none; overflow: hidden;">
@@ -174,19 +284,28 @@ if (isset($_POST['tambah_kendaraan'])) {
                 <h6 class="modal-title fw-bold m-0"><i class="bi bi-car-front-fill me-2 text-primary"></i>Daftarkan Kendaraan Baru</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="" method="POST">
+            
+            <form action="" method="POST" onsubmit="document.getElementById('btnSimpanTambah').disabled = true; document.getElementById('btnSimpanTambah').innerText = 'Menyimpan...';">
+                
+                <!-- SOLUSI: Input tersembunyi agar PHP tetap tahu bahwa form ini adalah form tambah kendaraan -->
+                <input type="hidden" name="tambah_kendaraan" value="1">
+                
                 <div class="modal-body p-4">
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-secondary">Nomor Polisi (Plat)</label>
                         <input type="text" name="nomor_polisi" class="form-control text-uppercase" placeholder="Contoh: B 1234 CDE" required style="border-radius: 8px;">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-secondary">Merk Kendaraan</label>
-                        <input type="text" name="merk" class="form-control" placeholder="Contoh: Honda / Nissan" required style="border-radius: 8px;">
+                        <label class="form-label small fw-bold text-secondary">Merk & Model Kendaraan</label>
+                        <input type="text" name="merk" class="form-control" placeholder="Contoh: Honda Vario 160 / Nissan GTR" required style="border-radius: 8px;">
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-secondary">Tipe Kendaraan</label>
-                        <input type="text" name="tipe" class="form-control" placeholder="Contoh: Motor Vario / Mobil GTR" required style="border-radius: 8px;">
+                        <select name="tipe" class="form-select" required style="border-radius: 8px;">
+                            <option value="">-- Pilih Tipe Kendaraan --</option>
+                            <option value="Mobil">Mobil</option>
+                            <option value="Motor">Motor</option>
+                        </select>
                     </div>
                     <div class="mb-2">
                         <label class="form-label small fw-bold text-secondary">Tahun Pembuatan</label>
@@ -195,7 +314,7 @@ if (isset($_POST['tambah_kendaraan'])) {
                 </div>
                 <div class="modal-footer bg-light p-3 border-0 text-end">
                     <button type="button" class="btn btn-secondary btn-sm rounded-3 px-3" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" name="tambah_kendaraan" class="btn btn-primary btn-sm rounded-3 px-4 fw-semibold">Simpan Kendaraan</button>
+                    <button type="submit" id="btnSimpanTambah" class="btn btn-primary btn-sm rounded-3 px-4 fw-semibold">Simpan Kendaraan</button>
                 </div>
             </form>
         </div>
